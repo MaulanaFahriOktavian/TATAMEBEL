@@ -82,7 +82,7 @@ Schema dikelola secara eksklusif melalui Laravel Migrations.
 | id | BIGINT UNSIGNED | No | Primary Key |
 | workshop_id | BIGINT UNSIGNED | No | Foreign Key -> workshops(id) ON DELETE CASCADE |
 | order_item_id | BIGINT UNSIGNED | No | Foreign Key -> order_items(id) ON DELETE CASCADE |
-| version | INT UNSIGNED | No | Default: 1 |
+| version | INT UNSIGNED | No | Default: 1, Unique with order_item_id |
 | width | DECIMAL(10, 2) | Yes | Lebar |
 | height | DECIMAL(10, 2) | Yes | Tinggi |
 | depth | DECIMAL(10, 2) | Yes | Kedalaman / Panjang |
@@ -177,7 +177,7 @@ Schema dikelola secara eksklusif melalui Laravel Migrations.
 | qc_inspection_id | BIGINT UNSIGNED | No | Foreign Key -> qc_inspections(id) ON DELETE CASCADE |
 | category | VARCHAR(100) | No | dimension, material, construction, surface, etc. |
 | item | VARCHAR(255) | No | Deskripsi poin pemeriksaan |
-| status | ENUM | No | PENDING, PASSED, FAILED |
+| status | ENUM | No | PASS, FAIL, NA |
 | notes | TEXT | Yes | Catatan hasil per poin |
 | created_at, updated_at | TIMESTAMP | Yes | Timestamps |
 
@@ -216,7 +216,7 @@ Schema dikelola secara eksklusif melalui Laravel Migrations.
 |---|---|---|---|
 | id | BIGINT UNSIGNED | No | Primary Key |
 | workshop_id | BIGINT UNSIGNED | No | Foreign Key -> workshops(id) ON DELETE CASCADE |
-| order_id | BIGINT UNSIGNED | No | Foreign Key -> orders(id) ON DELETE CASCADE |
+| order_id | BIGINT UNSIGNED | No | Foreign Key -> orders(id) ON DELETE CASCADE, Unique (One-to-One) |
 | courier | VARCHAR(100) | No | Nama ekspedisi / Driver workshop |
 | tracking_number | VARCHAR(255) | Yes | Nomor resi pengiriman |
 | shipping_address | TEXT | No | Alamat pengiriman barang |

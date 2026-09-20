@@ -1,0 +1,24 @@
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1',
+  headers: {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+  timeout: 10000,
+});
+
+export const getHealthStatus = async () => {
+  const startTime = performance.now();
+  const response = await api.get('/health');
+  const durationMs = Math.round(performance.now() - startTime);
+
+  return {
+    ...response.data,
+    clientLatencyMs: durationMs,
+  };
+};
+
+export default api;

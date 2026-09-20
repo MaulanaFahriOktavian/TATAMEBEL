@@ -1,0 +1,56 @@
+{
+  "info": {
+    "_postman_id": "tatamebel-api-collection",
+    "name": "TATAMEBEL API",
+    "description": "Official Postman collection for TATAMEBEL — Sistem Manajemen Pesanan & Produksi Mebel",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        },
+        "description": "Probe API operational health and core database dependency status."
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response adheres to standard envelope\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.success).to.eql(true);",
+              "    pm.expect(jsonData.message).to.be.a('string');",
+              "    pm.expect(jsonData.data).to.be.an('object');",
+              "    pm.expect(jsonData.data.status).to.be.oneOf(['healthy', 'degraded']);",
+              "    pm.expect(jsonData.data.database).to.be.oneOf(['connected', 'disconnected']);",
+              "    pm.expect(jsonData.data.version).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

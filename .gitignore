@@ -1,0 +1,47 @@
+# Dependencies
+/backend/vendor/
+/frontend/node_modules/
+
+# Environment files
+/backend/.env
+/backend/.env.backup
+/backend/.env.production
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.*.local
+
+# Build artifacts
+/frontend/dist/
+/frontend/dist-ssr/
+
+# Laravel Storage & Cache
+/backend/storage/*.key
+/backend/storage/framework/cache/*
+!/backend/storage/framework/cache/.gitignore
+/backend/storage/framework/sessions/*
+!/backend/storage/framework/sessions/.gitignore
+/backend/storage/framework/views/*
+!/backend/storage/framework/views/.gitignore
+/backend/storage/framework/testing/*
+!/backend/storage/framework/testing/.gitignore
+/backend/storage/logs/*
+!/backend/storage/logs/.gitignore
+/backend/storage/app/public/*
+!/backend/storage/app/public/.gitignore
+/backend/bootstrap/cache/*
+!/backend/bootstrap/cache/.gitignore
+
+# Testing & Coverage
+/backend/.phpunit.result.cache
+/backend/coverage/
+
+# IDE & OS
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db

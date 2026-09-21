@@ -180,18 +180,136 @@ Lihat dokumentasi lengkap di [docs/AUTHENTICATION.md](AUTHENTICATION.md).
   ```
 - **Error Codes:** 401 (Unauthenticated).
 
-### Customers
-- `GET /api/v1/customers`
-- `POST /api/v1/customers`
-- `GET /api/v1/customers/{id}`
-- `PATCH /api/v1/customers/{id}`
-- `DELETE /api/v1/customers/{id}`
+### Customers (Phase 3 — VERIFIED)
+Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
 
-### Orders
-- `GET /api/v1/orders`
-- `POST /api/v1/orders`
-- `GET /api/v1/orders/{id}`
-- `PATCH /api/v1/orders/{id}/status`
+#### 1. List Customers
+- **Method / Path:** `GET /api/v1/customers`
+- **Auth:** Bearer Token (`auth:sanctum`, `workshop.context`)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Customers retrieved successfully.",
+    "data": [
+      {
+        "id": 1,
+        "name": "Pak Hendra Jati",
+        "company_name": "PT Mebel Nusantara",
+        "phone": "081234567888",
+        "email": "hendra@mebelnusantara.com",
+        "address": "Jl. Raya Tahunan No. 10, Jepara",
+        "notes": "VIP buyer WhatsApp",
+        "created_at": "2026-09-21T06:11:50.000000Z",
+        "updated_at": "2026-09-21T06:11:50.000000Z"
+      }
+    ],
+    "meta": {
+      "current_page": 1,
+      "per_page": 15,
+      "total": 1,
+      "last_page": 1
+    }
+  }
+  ```
+
+#### 2. Create Customer
+- **Method / Path:** `POST /api/v1/customers`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Request Body:**
+  ```json
+  {
+    "name": "Pak Hendra Jati",
+    "company_name": "PT Mebel Nusantara",
+    "phone": "081234567888",
+    "email": "hendra@mebelnusantara.com",
+    "address": "Jl. Raya Tahunan No. 10, Jepara",
+    "notes": "VIP buyer WhatsApp"
+  }
+  ```
+- **Response (201 Created):** Customer data envelope.
+
+#### 3. Get Customer Detail
+- **Method / Path:** `GET /api/v1/customers/{id}`
+- **Response (200 OK):** Customer data envelope. 404 jika tidak ditemukan di workshop.
+
+#### 4. Update Customer
+- **Method / Path:** `PATCH /api/v1/customers/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Response (200 OK):** Updated customer data envelope.
+
+#### 5. Delete Customer
+- **Method / Path:** `DELETE /api/v1/customers/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Response (200 OK):** `{ "success": true, "message": "Customer deleted successfully.", "data": null }`.
+- **Constraint:** Ditolak 422 jika pelanggan memiliki pesanan yang terdaftar.
+
+---
+
+### Orders (Phase 3 — VERIFIED)
+Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
+
+#### 1. List Orders
+- **Method / Path:** `GET /api/v1/orders`
+- **Auth:** Bearer Token (`auth:sanctum`, `workshop.context`)
+- **Response (200 OK):** Paginated orders envelope dengan relasi `customer`.
+
+#### 2. Create Order
+- **Method / Path:** `POST /api/v1/orders`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Request Body:**
+  ```json
+  {
+    "customer_id": 1,
+    "title": "Set Meja Tamu Ukir Mewah",
+    "notes": "Finishing Walnut Glossy",
+    "items": [
+      {
+        "product_name": "Meja Tamu Ukir Jati 150x80",
+        "product_code": "MT-UKIR-01",
+        "quantity": 1,
+        "unit_price": 3500000,
+        "notes": "Ukir motif Jepara klasik"
+      },
+      {
+        "product_name": "Kursi Tamu Ukir Single",
+        "product_code": "KT-UKIR-02",
+        "quantity": 4,
+        "unit_price": 1250000,
+        "notes": "Busa royal foam kain bludru gold"
+      }
+    ]
+  }
+  ```
+- **Response (201 Created):**
+  ```json
+  {
+    "success": true,
+    "message": "Order created successfully.",
+    "data": {
+      "id": 1,
+      "order_number": "ORD-202609-0001",
+      "title": "Set Meja Tamu Ukir Mewah",
+      "status": "DRAFT",
+      "total_amount": 8500000,
+      "notes": "Finishing Walnut Glossy",
+      "public_token": "cIuuwGQOMTP7ajwAtmWCHHff60Vk3grnsgSEvA3t",
+      "customer": { ... },
+      "items": [ ... ]
+    }
+  }
+  ```
+
+#### 3. Get Order Detail
+- **Method / Path:** `GET /api/v1/orders/{id}`
+- **Auth:** Bearer Token (`auth:sanctum`, `workshop.context`)
+- **Response (200 OK):** Detail order lengkap dengan customer dan order items. 404 jika beda workshop.
+
+#### 4. Change Order Status
+- **Method / Path:** `PATCH /api/v1/orders/{id}/status`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Request Body:** `{ "status": "CONFIRMED" }`
+- **Response (200 OK):** Updated order data envelope. 422 jika transisi tidak diizinkan oleh state machine.
 
 ### Specifications & Changes
 - `POST /api/v1/orders/{order}/items/{item}/specification`

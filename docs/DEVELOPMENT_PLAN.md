@@ -31,8 +31,17 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 
 ---
 
-### PHASE 3: Customer & Order Management
-- **Tujuan:** Pengelolaan data pelanggan, pembuatan pesanan (Order), Order Items, Spesifikasi Mebel ber-versi, Change Request approval flow, dan Order State Machine validation.
+### PHASE 3: Customer & Order Management *(VERIFIED)*
+- **Tujuan:** Pengelolaan data pelanggan, pembuatan pesanan (Order), Order Items, kalkulasi otomatis subtotal/total, penomoran pesanan unik bulanan (ORD-YYYYMM-XXXX), token publik acak, 12-state order state machine, pencegahan kebocoran lintas tenant, dan activity audit log.
+- **Implementasi:**
+  - Customer CRUD (`GET /customers`, `POST /customers`, `GET /customers/{id}`, `PATCH /customers/{id}`, `DELETE /customers/{id}`).
+  - Order Management (`GET /orders`, `POST /orders` dengan minimal 1 item, `GET /orders/{id}`, `PATCH /orders/{id}/status`).
+  - State machine transisi pesanan terverifikasi ketat (termasuk direct DRAFT -> CONFIRMED dan pembatasan CANCELLED).
+  - Service layer (`CustomerService`, `OrderService`, `ActivityLogService`).
+  - Form Requests & API Resources (`CustomerResource`, `OrderResource`, `OrderItemResource`).
+  - Policy & Role authorization (`OWNER`, `ADMIN`, `PRODUCTION`, `QC`).
+  - Automated tests lulus 100% (61 tests, 464 assertions).
+- **Status:** Selesai dan terverifikasi.
 
 ---
 

@@ -51,10 +51,10 @@
 ## 4. User Roles & Authorization Matrix
 Enum `UserRole` (`OWNER`, `ADMIN`, `PRODUCTION`, `QC`) terintegrasi pada model `User`:
 - Helper methods backend: `hasRole(UserRole $role)` dan `hasAnyRole(array $roles)`.
-- **OWNER:** Akses penuh ke seluruh workshop setting, manajemen user, keuangan (pencatatan pembayaran), order, produksi, dan QC.
-- **ADMIN:** Manajemen pelanggan, pemrosesan order, approval spesifikasi, koordinasi shipping.
-- **PRODUCTION:** Pembaruan tahapan produksi (stage progress), upload foto bukti pengerjaan (photo evidence).
-- **QC:** Inspeksi mutu (QC checklist), pencatatan cacat (defect tracking), persetujuan rework.
+- **OWNER:** Akses penuh ke seluruh workshop setting, manajemen user, keuangan (pencatatan pembayaran), customer CRUD, order CRUD, produksi, dan QC.
+- **ADMIN:** Manajemen pelanggan (CRUD), pemrosesan order (CRUD), approval spesifikasi, koordinasi shipping.
+- **PRODUCTION:** Read-only pada Customer dan Order. Pembaruan tahapan produksi (stage progress), upload foto bukti pengerjaan (photo evidence). Mutasi customer/order ditolak (403).
+- **QC:** Read-only pada Customer dan Order. Inspeksi mutu (QC checklist), pencatatan cacat (defect tracking), persetujuan rework. Mutasi customer/order ditolak (403).
 - **Penting:** Role capability tidak pernah mengabaikan atau melompati batas tenant isolation. Akses lintas workshop tetap ditolak walaupun berstatus OWNER/ADMIN.
 
 ## 5. Order State Machine
@@ -62,9 +62,14 @@ Order memiliki 12 state yang transisinya divalidasi ketat oleh `OrderService`:
 ```
 DRAFT -> QUOTATION -> CONFIRMED -> WAITING_DP -> READY_FOR_PRODUCTION 
       -> IN_PRODUCTION -> QC -> PACKING -> READY_TO_SHIP -> SHIPPED -> COMPLETED
-      (CANCELLED dapat dipicu dari status sebelum pengerjaan selesai)
 ```
-- Transisi tidak valid akan ditolak dengan HTTP 422 Unprocessable Entity.
+- **Jalan Pintas Cepat:** Transisi langsung `DRAFT -> CONFIRMED` diperbolehkan untuk memfasilitasi transaksi langsung via WhatsApp.
+- **Pembatasan Pembatalan (`CANCELLED`):** Hanya diperbolehkan dari status sebelum pengerjaan selesai:
+  `DRAFT`, `QUOTATION`, `CONFIRMED`, `WAITING_DP`, `READY_FOR_PRODUCTION`, dan `IN_PRODUCTION`.
+- **Dilarang Batal:** Status `QC`, `PACKING`, `READY_TO_SHIP`, `SHIPPED`, `COMPLETED`, dan `CANCELLED` tidak dapat dibatalkan.
+- **Transisi Ilegal:** Ditolak dengan HTTP 422 Unprocessable Entity.
+- **Penomoran Pesanan:** `ORD-YYYYMM-XXXX` berurutan per workshop per bulan dengan penguncian eksklusif baris workshop (`lockForUpdate`).
+- **Kalkulasi Nilai:** `subtotal = qty * unit_price`, `total_amount = sum(subtotals)`. Dihitung otoritatif oleh backend secara atomik dalam database transaction.
 
 ## 6. Specification Versioning & Change Requests
 - Spesifikasi mebel diawali dengan status `DRAFT`.

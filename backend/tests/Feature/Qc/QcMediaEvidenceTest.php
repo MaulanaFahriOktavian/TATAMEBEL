@@ -33,6 +33,7 @@ class QcMediaEvidenceTest extends TestCase
     {
         parent::setUp();
         Storage::fake('public');
+        Storage::fake('local');
 
         $this->workshop = Workshop::factory()->create();
 
@@ -110,7 +111,10 @@ class QcMediaEvidenceTest extends TestCase
         $this->assertEquals($this->defect->id, $media->qc_defect_id);
         $this->assertEquals($this->inspection->id, $media->qc_inspection_id);
         $this->assertEquals(MediaVisibility::INTERNAL, $media->visibility);
-        Storage::disk('public')->assertExists($media->file_path);
+
+        // Defect photo must be stored securely on 'local' private disk and NOT on public disk
+        Storage::disk('local')->assertExists($media->file_path);
+        Storage::disk('public')->assertMissing($media->file_path);
     }
 
     public function test_cannot_upload_inspection_media_to_finalized_inspection(): void

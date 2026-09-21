@@ -62,13 +62,16 @@ class MediaService
             ]);
         }
 
-        // Generate tenant-segregated storage path
-        $folder = "workshops/{$order->workshop_id}/orders/{$order->id}/media";
-        $storedPath = $file->store($folder, 'public');
-
         $visibility = isset($data['visibility'])
             ? MediaVisibility::from($data['visibility'])
             : MediaVisibility::INTERNAL;
+
+        // Segregate physical storage disk by visibility:
+        // CUSTOMER media goes to 'public' disk (served for public portal).
+        // INTERNAL media goes to 'local' private disk (storage/app/private, inaccessible via public URL).
+        $disk = $visibility === MediaVisibility::CUSTOMER ? 'public' : 'local';
+        $folder = "workshops/{$order->workshop_id}/orders/{$order->id}/media";
+        $storedPath = $file->store($folder, $disk);
 
         $media = Media::create([
             'workshop_id' => $order->workshop_id,
@@ -108,8 +111,10 @@ class MediaService
      */
     public function delete(Media $media, ?User $actor = null): bool
     {
-        if (Storage::disk('public')->exists($media->file_path)) {
-            Storage::disk('public')->delete($media->file_path);
+        $disk = $media->visibility === MediaVisibility::CUSTOMER ? 'public' : 'local';
+
+        if (Storage::disk($disk)->exists($media->file_path)) {
+            Storage::disk($disk)->delete($media->file_path);
         }
 
         $media->delete();

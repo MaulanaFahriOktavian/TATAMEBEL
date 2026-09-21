@@ -593,6 +593,127 @@ Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
 - `GET /api/v1/orders/{id}/shipping`
 - `PUT /api/v1/orders/{id}/shipping`
 
-### Dashboard & Public Portal
+### Customer Progress Portal (Public - Phase 6)
+
+#### 1. Get Public Order Tracking
+- **Method / Path:** `GET /api/v1/public/orders/{public_token}`
+- **Auth:** Public (Tanpa Bearer Token).
+- **Middleware:** `throttle:60,1` (Maksimal 60 request per menit per alamat IP).
+- **Lookup Constraint:** Dicocokkan secara ketat pada `orders.public_token` (indeks B-tree unik).
+- **Keamanan & Proyeksi:** Menggunakan `CustomerPortalOrderResource`. Menolak eksposur seluruh ID internal database, data finansial (`total_amount`, `unit_price`), `public_token` dalam respons, catatan internal, activity/audit logs, defect QC internal, dan foto ber-visibilitas `INTERNAL`.
+- **Response 200 OK:**
+```json
+{
+  "success": true,
+  "message": "Order tracking details retrieved successfully.",
+  "data": {
+    "order": {
+      "order_number": "ORD-202609-0001",
+      "title": "Meja Makan Jati Minimalis",
+      "status": "IN_PRODUCTION",
+      "status_label": "Sedang Diproduksi",
+      "created_at": "2026-09-20T09:30:00Z",
+      "confirmed_at": "2026-09-20T10:00:00Z",
+      "customer_name": "Bpk. Hendra",
+      "workshop": {
+        "name": "Jati Indah Furniture",
+        "phone": "08123456789",
+        "address": "Jepara, Jawa Tengah"
+      }
+    },
+    "items": [
+      {
+        "product_name": "Meja Makan Utama 6 Kursi",
+        "product_code": "TBL-01",
+        "quantity": 1,
+        "notes": "Finishing natural doff",
+        "specification": {
+          "version": 1,
+          "dimensions": {
+            "width": "200.00",
+            "height": "75.00",
+            "depth": "100.00",
+            "unit": "cm"
+          },
+          "material": "Kayu Jati Solid",
+          "wood_grade": "Grade A TPK",
+          "finishing": "Natural Teak Oil Polyurethane",
+          "color": "Warm Honey Teak",
+          "fabric": null,
+          "design_reference": "Minimalis Scandinavian",
+          "special_request": "Ujung meja dibuat bevel rounded 10mm"
+        }
+      }
+    ],
+    "production": {
+      "progress_percentage": 50.0,
+      "current_stage": "Assembly",
+      "stages": [
+        {
+          "sequence": 1,
+          "name": "Material Preparation",
+          "status": "COMPLETED",
+          "status_label": "Selesai",
+          "started_at": "2026-09-20T11:00:00Z",
+          "completed_at": "2026-09-20T14:00:00Z"
+        },
+        {
+          "sequence": 2,
+          "name": "Cutting",
+          "status": "COMPLETED",
+          "status_label": "Selesai",
+          "started_at": "2026-09-20T14:00:00Z",
+          "completed_at": "2026-09-21T09:00:00Z"
+        },
+        {
+          "sequence": 3,
+          "name": "Assembly",
+          "status": "IN_PROGRESS",
+          "status_label": "Sedang Dikerjakan",
+          "started_at": "2026-09-21T09:30:00Z",
+          "completed_at": null
+        }
+      ]
+    },
+    "photos": [
+      {
+        "url": "http://localhost:8000/storage/workshops/1/orders/1/media/xyz.jpg",
+        "caption": "Rangka utama meja makan telah dirakit dan presisi.",
+        "uploaded_at": "2026-09-21T09:45:00Z"
+      }
+    ],
+    "quality_control": {
+      "status": "IN_PROGRESS",
+      "status_label": "Sedang dalam Pengecekan Kualitas",
+      "passed_at": null,
+      "note": "Pesanan sedang dalam tahap evaluasi kualitas komprehensif."
+    },
+    "shipping": {
+      "courier": "Jepara Cargo Express",
+      "tracking_number": "JCE-88992211",
+      "status": "SHIPPED",
+      "status_label": "Dalam Pengiriman",
+      "shipped_at": "2026-09-22T08:00:00Z",
+      "estimated_arrival": "2026-09-25",
+      "delivered_at": null
+    }
+  }
+}
+```
+- **Response 404 Not Found (Invalid / Unknown Token):**
+```json
+{
+  "success": false,
+  "message": "Pesanan tidak ditemukan atau tautan pelacakan tidak valid.",
+  "errors": {}
+}
+```
+- **Response 429 Too Many Requests:**
+```json
+{
+  "message": "Too Many Attempts."
+}
+```
+
+### Dashboard (Planned)
 - `GET /api/v1/dashboard`
-- `GET /api/v1/public/orders/{public_token}`

@@ -18,12 +18,16 @@ class MediaResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $url = $this->visibility === \App\Enums\MediaVisibility::CUSTOMER
+            ? Storage::disk('public')->url($this->file_path)
+            : Storage::disk('local')->temporaryUrl($this->file_path, now()->addMinutes(60));
+
         return [
             'id' => $this->id,
             'order_id' => $this->order_id,
             'production_update_id' => $this->production_update_id,
             'file_path' => $this->file_path,
-            'url' => Storage::disk('public')->url($this->file_path),
+            'url' => $url,
             'original_name' => $this->original_name,
             'mime_type' => $this->mime_type,
             'file_size' => (int) $this->file_size,

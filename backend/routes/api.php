@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChangeRequestController;
 use App\Http\Controllers\Api\CustomerController;
+use App\Http\Controllers\Api\CustomerPortalController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\OrderController;
@@ -23,6 +24,11 @@ use Illuminate\Support\Facades\Route;
 
 // Health Check (Public)
 Route::get('/health', HealthController::class)->name('api.v1.health');
+
+// Customer Progress Portal (Public Tracking - Phase 6)
+Route::prefix('public')->name('api.v1.public.')->middleware(['throttle:60,1'])->group(function () {
+    Route::get('/orders/{public_token}', [CustomerPortalController::class, 'show'])->name('orders.show');
+});
 
 // Authentication Routes
 Route::prefix('auth')->name('api.v1.auth.')->group(function () {

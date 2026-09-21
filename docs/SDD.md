@@ -124,10 +124,16 @@ DRAFT -> QUOTATION -> CONFIRMED -> WAITING_DP -> READY_FOR_PRODUCTION
 - File foto evidence disimpan melalui Laravel Storage abstraction.
 - Visibility: `INTERNAL` (hanya staf workshop) dan `CUSTOMER` (dapat dilihat di portal publik).
 
-## 10. Customer Portal Security
-- Akses portal pelanggan menggunakan random high-entropy `public_token` (contoh: 64-char URL-safe string).
-- Portal bersifat read-only tanpa login.
-- Data sensitif seperti catatan internal, foto internal, margin laba/harga beli, user internal, dan activity log tidak pernah di-expose ke publik.
+## 10. Customer Portal Architecture & Security
+- **Akses Tanpa Login:** Pelanggan mengakses portal publik melalui secure, non-incremental, high-entropy `public_token` (40-karakter alfanumerik acak berbasis CSPRNG) pada URL `/track/{public_token}`. Tidak memerlukan akun Sanctum.
+- **Tenant Isolation:** Lookup order murni berbasis `orders.public_token` (indeks B-tree unik). Seluruh relasi child di-query secara ketat melalui instance order tersebut tanpa inferensi tenant dari client.
+- **Public Projection Resource (`CustomerPortalOrderResource`):**
+  - **Whitelist Data Publik:** Identitas pesanan (`order_number`, `title`, `status`, `status_label`, `created_at`, `confirmed_at`), nama pemesan (`customer_name`), identitas workshop (`name`, `phone`, `address`), item mebel beserta spesifikasi teknis terkunci (`LOCKED` specs: dimensi, kayu, finishing, warna, jok, permintaan khusus), progres tahapan aktif kalkulasi backend (`progress_percentage`), galeri foto ber-visibilitas `CUSTOMER`, status mutu QC umum, dan status pengiriman (bila ada).
+  - **Strict Blacklist (Dilarang Diekspos):** Seluruh ID internal database (`order.id`, `workshop_id`, `customer_id`, dll.), data finansial (`total_amount`, `unit_price`, `subtotal`, pembayaran), `public_token` dalam response body, catatan internal bengkel (`notes`, `production_note`, `customer.notes`), user/pekerja internal, activity/audit logs, detail cacat QC (`qc_defects`, severity, rework history), dan foto ber-visibilitas `INTERNAL`.
+- **Media Visibility:** Hanya berkas media dengan `visibility = CUSTOMER` yang dimasukkan dalam proyeksi `photos`. Media bukti cacat QC internal ber-visibilitas `INTERNAL` terisolasi secara mutlak dari respons publik.
+- **QC Visibility:** Menampilkan label status umum dan menenangkan: `PENDING` ("Menunggu Pengecekan Kualitas"), `IN_PROGRESS` ("Sedang dalam Pengecekan Kualitas"), dan `PASSED` ("Lolos Pengecekan Kualitas" beserta tanggal verifikasi). Detail cacat dan proses perbaikan bengkel tidak pernah dibocorkan.
+- **Proteksi Rate Limiting & Anti-Enumeration:** Endpoint publik dilindungi oleh middleware `throttle:60,1`. Token yang tidak valid menghasilkan HTTP `404 Not Found` generik yang seragam.
+- **Frontend Mobile-First:** Rute React `/track/:publicToken` dirancang mobile-first (optimal 360–430px) untuk pelanggan WhatsApp, dengan estetika bersih bertema kayu mebel hangat dan penanganan 7 state antarmuka yang andal.
 
 ## 11. WhatsApp Integration Philosophy
 - TATAMEBEL menyediakan templated progress update message dengan tautan customer portal.

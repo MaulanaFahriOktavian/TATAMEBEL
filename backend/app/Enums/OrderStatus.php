@@ -16,4 +16,25 @@ enum OrderStatus: string
     case SHIPPED = 'SHIPPED';
     case COMPLETED = 'COMPLETED';
     case CANCELLED = 'CANCELLED';
+
+    /**
+     * Customer-facing public status label.
+     */
+    public function publicLabel(): string
+    {
+        return match ($this) {
+            self::DRAFT => 'Draft Pesanan',
+            self::QUOTATION => 'Menunggu Persetujuan',
+            self::CONFIRMED => 'Pesanan Dikonfirmasi',
+            self::WAITING_DP => 'Menunggu Pembayaran DP',
+            self::READY_FOR_PRODUCTION => 'Siap Masuk Produksi',
+            self::IN_PRODUCTION => 'Sedang Diproduksi',
+            self::QC => 'Pengecekan Kualitas (QC)',
+            self::PACKING => 'Pengemasan (Packing)',
+            self::READY_TO_SHIP => 'Siap Dikirim',
+            self::SHIPPED => 'Dalam Pengiriman',
+            self::COMPLETED => 'Selesai & Diterima',
+            self::CANCELLED => 'Pesanan Dibatalkan',
+        };
+    }
 }

@@ -84,7 +84,17 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 ---
 
 ### PHASE 6: Customer Progress Portal
-- **Tujuan:** Portal publik tanpa login menggunakan secure high-entropy `public_token`. Menampilkan identitas order, status pengerjaan, progres kalkulasi, timeline foto ber-visibilitas customer, status QC, dan tracking pengiriman.
+- **Tujuan:** Portal publik tanpa login menggunakan secure high-entropy `public_token` (40-char CSPRNG string). Menampilkan identitas order, status pengerjaan, progres kalkulasi backend, spesifikasi teknis terkunci (LOCKED), timeline foto ber-visibilitas customer, status QC, dan tracking pengiriman.
+- **Deliverables:**
+  - Endpoint publik: `GET /api/v1/public/orders/{public_token}` dilindungi `throttle:60,1` tanpa autentikasi Sanctum.
+  - Resource proyeksi publik terisolasi: `CustomerPortalOrderResource` dengan blacklist ketat (tanpa ID internal, tanpa data finansial, tanpa catatan internal, tanpa data user bengkel, tanpa public_token di body).
+  - Proyeksi spesifikasi teknis murni versi terkunci (`LOCKED`), mengabaikan draft perubahan.
+  - Proyeksi foto hanya ber-visibilitas `CUSTOMER`, mengisolasi foto cacat QC internal.
+  - Status mutu QC ramah pelanggan (`PENDING`, `IN_PROGRESS`, `PASSED`) tanpa membocorkan daftar defek, keparahan, atau riwayat rework internal.
+  - Proyeksi pengiriman bila data tersedia (`shipping = null` jika belum ada pengiriman).
+  - Antarmuka web mobile-first React pada rute `/track/:publicToken` yang mendukung 7 status tampilan (Loading, Sukses, 404, Error Jaringan, Belum Produksi, Selesai, Pengiriman).
+  - Automated tests lulus 100% (14 test feature publik baru mencakup seluruh aspek keamanan dan fungsionalitas).
+- **Status:** Selesai dan terverifikasi.
 
 ---
 

@@ -32,6 +32,7 @@ class MediaEvidenceTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
+        Storage::fake('local');
 
         $this->workshopA = Workshop::factory()->create();
         $this->workshopB = Workshop::factory()->create();
@@ -158,7 +159,9 @@ class MediaEvidenceTest extends TestCase
         $mediaId = $uploadRes->json('data.id');
         $filePath = $uploadRes->json('data.file_path');
 
-        Storage::disk('public')->assertExists($filePath);
+        // Internal media is securely stored on 'local' disk
+        Storage::disk('local')->assertExists($filePath);
+        Storage::disk('public')->assertMissing($filePath);
 
         // Delete media
         $delRes = $this->withHeader('Authorization', 'Bearer '.$token)
@@ -168,7 +171,7 @@ class MediaEvidenceTest extends TestCase
             ->assertJsonPath('success', true);
 
         $this->assertDatabaseMissing('media', ['id' => $mediaId]);
-        Storage::disk('public')->assertMissing($filePath);
+        Storage::disk('local')->assertMissing($filePath);
     }
 
     public function test_cross_tenant_media_isolation_idor(): void

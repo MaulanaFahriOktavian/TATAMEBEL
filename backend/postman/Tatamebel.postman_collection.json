@@ -886,6 +886,54 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Customer Progress Portal (Public)",
+      "item": [
+        {
+          "name": "Get Public Order Tracking",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/public/orders/{{public_token}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "public",
+                "orders",
+                "{{public_token}}"
+              ]
+            },
+            "description": "Public customer tracking endpoint accessible via unguessable public_token. Returns customer-safe projection without internal IDs, internal notes, or financial details."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.expect(jsonData.success).to.be.true;",
+                  "pm.expect(jsonData.data).to.have.property('order');",
+                  "pm.expect(jsonData.data).to.have.property('production');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

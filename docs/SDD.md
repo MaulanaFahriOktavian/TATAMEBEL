@@ -41,15 +41,21 @@
 ## 3. Multi-Tenancy & Tenant Isolation
 - **Tenant Scope:** Setiap entitas operasional terisolasi per workshop melalui foreign key `workshop_id`.
 - **Backend Enforcement:**
-  - Tenant query wajib diverifikasi di backend melalui authenticated user context (`auth()->user()->workshop_id`) atau global tenant scope.
-  - User workshop A dilarang keras dapat membaca, mengubah, atau menghapus data workshop B.
+  - Tenant context ditegakkan secara request-scoped oleh middleware `EnsureWorkshopContext` (`workshop.context`).
+  - Tidak ada static mutable global state (`Tenant::$current`).
+  - Tenant boundary query wajib diverifikasi di backend melalui user workshop scope: `$user->workshop->orders()->whereKey($id)->firstOrFail()`.
+  - Trait `EnforcesWorkshopTenancy` (`belongsToSameWorkshop()`) menjamin otorisasi policy selalu memvalidasi kesamaan `workshop_id`.
+  - User workshop A dilarang keras membaca, mengubah, atau menghapus data workshop B. Mengetahui ID integer resource tenant lain tidak akan pernah membuka akses (zero data leakage).
   - Frontend visibility bukan mekanisme keamanan; otorisasi mutlak ditegakkan di backend Laravel.
 
 ## 4. User Roles & Authorization Matrix
-1. **OWNER:** Akses penuh ke seluruh workshop setting, manajemen user, keuangan (pencatatan pembayaran), order, produksi, dan QC.
-2. **ADMIN:** Manajemen pelanggan, pemrosesan order, approval spesifikasi, koordinasi shipping.
-3. **PRODUCTION:** Pembaruan tahapan produksi (stage progress), upload foto bukti pengerjaan (photo evidence).
-4. **QC:** Inspeksi mutu (QC checklist), pencatatan cacat (defect tracking), persetujuan rework.
+Enum `UserRole` (`OWNER`, `ADMIN`, `PRODUCTION`, `QC`) terintegrasi pada model `User`:
+- Helper methods backend: `hasRole(UserRole $role)` dan `hasAnyRole(array $roles)`.
+- **OWNER:** Akses penuh ke seluruh workshop setting, manajemen user, keuangan (pencatatan pembayaran), order, produksi, dan QC.
+- **ADMIN:** Manajemen pelanggan, pemrosesan order, approval spesifikasi, koordinasi shipping.
+- **PRODUCTION:** Pembaruan tahapan produksi (stage progress), upload foto bukti pengerjaan (photo evidence).
+- **QC:** Inspeksi mutu (QC checklist), pencatatan cacat (defect tracking), persetujuan rework.
+- **Penting:** Role capability tidak pernah mengabaikan atau melompati batas tenant isolation. Akses lintas workshop tetap ditolak walaupun berstatus OWNER/ADMIN.
 
 ## 5. Order State Machine
 Order memiliki 12 state yang transisinya divalidasi ketat oleh `OrderService`:

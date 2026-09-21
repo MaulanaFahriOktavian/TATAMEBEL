@@ -54,4 +54,17 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Workshop::class);
     }
+
+    public function hasRole(UserRole $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    /**
+     * @param array<int, UserRole> $roles
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role, $roles, true);
+    }
 }

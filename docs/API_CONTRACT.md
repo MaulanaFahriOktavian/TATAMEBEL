@@ -95,10 +95,90 @@ Semua API backend TATAMEBEL disajikan di bawah prefix resmi:
 
 ## Target Endpoint Map (Phases 2 - 7)
 
-### Authentication
-- `POST /api/v1/auth/login`
-- `POST /api/v1/auth/logout`
-- `GET /api/v1/auth/me`
+### Authentication (Phase 2 — VERIFIED)
+Lihat dokumentasi lengkap di [docs/AUTHENTICATION.md](AUTHENTICATION.md).
+
+#### 1. Login
+- **Method / Path:** `POST /api/v1/auth/login`
+- **Auth:** Public
+- **Request:**
+  ```json
+  {
+    "email": "owner@kayulestari.com",
+    "password": "password"
+  }
+  ```
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Login successful.",
+    "data": {
+      "token": "...",
+      "token_type": "Bearer",
+      "user": {
+        "id": 1,
+        "name": "Pak Bambang (Owner)",
+        "email": "owner@kayulestari.com",
+        "role": "OWNER",
+        "is_active": true,
+        "workshop": {
+          "id": 1,
+          "name": "Workshop Kayu Lestari",
+          "slug": "workshop-kayu-lestari",
+          "phone": "081234567890",
+          "email": "info@kayulestari.com",
+          "address": "Jl. Pengrajin Mebel No. 12, Jepara, Jawa Tengah",
+          "timezone": "Asia/Jakarta"
+        }
+      }
+    }
+  }
+  ```
+- **Error Codes:** 401 (Invalid credentials / Inactive user), 403 (No valid workshop), 422 (Validation error).
+
+#### 2. Get Authenticated User
+- **Method / Path:** `GET /api/v1/auth/me`
+- **Auth:** Bearer Token (`auth:sanctum`, `workshop.context`)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Authenticated user.",
+    "data": {
+      "user": {
+        "id": 1,
+        "name": "Pak Bambang (Owner)",
+        "email": "owner@kayulestari.com",
+        "role": "OWNER",
+        "is_active": true,
+        "workshop": {
+          "id": 1,
+          "name": "Workshop Kayu Lestari",
+          "slug": "workshop-kayu-lestari",
+          "phone": "081234567890",
+          "email": "info@kayulestari.com",
+          "address": "Jl. Pengrajin Mebel No. 12, Jepara, Jawa Tengah",
+          "timezone": "Asia/Jakarta"
+        }
+      }
+    }
+  }
+  ```
+- **Error Codes:** 401 (Unauthenticated / Token revoked / Inactive user), 403 (Invalid workshop).
+
+#### 3. Logout
+- **Method / Path:** `POST /api/v1/auth/logout`
+- **Auth:** Bearer Token (`auth:sanctum`, `workshop.context`)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Logout successful.",
+    "data": null
+  }
+  ```
+- **Error Codes:** 401 (Unauthenticated).
 
 ### Customers
 - `GET /api/v1/customers`

@@ -311,20 +311,140 @@ Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
 - **Request Body:** `{ "status": "CONFIRMED" }`
 - **Response (200 OK):** Updated order data envelope. 422 jika transisi tidak diizinkan oleh state machine.
 
-### Specifications & Changes
-- `POST /api/v1/orders/{order}/items/{item}/specification`
-- `PATCH /api/v1/specifications/{id}`
-- `POST /api/v1/specifications/{id}/lock`
-- `POST /api/v1/orders/{id}/change-requests`
-- `POST /api/v1/change-requests/{id}/approve`
-- `POST /api/v1/change-requests/{id}/reject`
+### Specifications (Phase 4 — VERIFIED)
 
-### Production & Media
-- `GET /api/v1/orders/{id}/production`
-- `POST /api/v1/orders/{id}/production/stages`
-- `PATCH /api/v1/production/stages/{id}`
-- `POST /api/v1/production/stages/{id}/updates`
-- `POST /api/v1/orders/{id}/media`
+#### 1. Create Specification (DRAFT v1)
+- **Method / Path:** `POST /api/v1/orders/{orderId}/items/{itemId}/specifications`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Request Body:**
+  ```json
+  {
+    "width": 200.0,
+    "height": 75.0,
+    "depth": 90.0,
+    "dimension_unit": "cm",
+    "material": "Kayu Jati Solid TPK Perhutani",
+    "wood_grade": "Grade A",
+    "finishing": "Natural PU Satin",
+    "color": "Warm Teak",
+    "fabric": null,
+    "design_reference": "https://example.com/sketches/meja.jpg",
+    "special_request": "Sudut meja dibuat beveled 45 derajat",
+    "production_note": "Gunakan konstruksi mortise and tenon ganda"
+  }
+  ```
+- **Response (201 Created):** Single item specification envelope (`status`: `DRAFT`, `version`: 1, product attributes from `OrderItem`).
+
+#### 2. List Specification Versions
+- **Method / Path:** `GET /api/v1/orders/{orderId}/items/{itemId}/specifications`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`, `QC`)
+- **Response (200 OK):** Collection of all historical versions in descending order.
+
+#### 3. Get Current Operational Specification
+- **Method / Path:** `GET /api/v1/orders/{orderId}/items/{itemId}/specifications/current`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`, `QC`)
+- **Response (200 OK):** Returns the highest version with `status = LOCKED`. If no locked version exists, returns `{ "data": null }`.
+
+#### 4. Update DRAFT Specification
+- **Method / Path:** `PATCH /api/v1/specifications/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Response (200 OK):** Updated specification envelope. Ditolak HTTP 422 jika status sudah `LOCKED`.
+
+#### 5. Lock Specification
+- **Method / Path:** `POST /api/v1/specifications/{id}/lock`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Response (200 OK):** Locked specification envelope (`status`: `LOCKED`, `locked_at`, `locked_by`).
+
+---
+
+### Change Requests (Phase 4 — VERIFIED)
+
+#### 1. Submit Change Request
+- **Method / Path:** `POST /api/v1/orders/{orderId}/change-requests`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`)
+- **Request Body:**
+  ```json
+  {
+    "order_item_id": 1,
+    "requested_by": "Pelanggan WhatsApp (Pak Hendra)",
+    "description": "Minta ubah lebar dipan dari 180cm menjadi 200cm dan finishing ganti ke Walnut Glossy.",
+    "reason": "Kasur yang dibeli ukuran super king.",
+    "requested_changes": {
+      "width": 200.0,
+      "finishing": "Walnut Glossy"
+    }
+  }
+  ```
+- **Response (201 Created):** Change request envelope (`status`: `PENDING`). Ditolak 422 jika item belum memiliki spesifikasi LOCKED atau requested_changes tidak valid.
+
+#### 2. List Change Requests
+- **Method / Path:** `GET /api/v1/orders/{orderId}/change-requests`
+- **Response (200 OK):** Array of change requests for the order.
+
+#### 3. Approve Change Request
+- **Method / Path:** `POST /api/v1/change-requests/{id}/approve`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Request Body:** `{ "review_note": "Disetujui setelah konfirmasi ketersediaan bahan baku." }`
+- **Response (200 OK):** Contains updated change request (`APPROVED`) and newly created specification (`version = v+1`, `status = DRAFT`).
+
+#### 4. Reject Change Request
+- **Method / Path:** `POST /api/v1/change-requests/{id}/reject`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Request Body:** `{ "review_note": "Alasan penolakan wajib diisi." }`
+- **Response (200 OK):** Updated change request (`REJECTED`).
+
+---
+
+### Production Tracking & Media (Phase 4 — VERIFIED)
+
+#### 1. Production Overview & Authoritative Progress
+- **Method / Path:** `GET /api/v1/orders/{orderId}/production`
+- **Auth:** Bearer Token (`auth:sanctum`, `workshop.context`)
+- **Response (200 OK):**
+  ```json
+  {
+    "success": true,
+    "message": "Production overview retrieved successfully.",
+    "data": {
+      "order_id": 1,
+      "order_number": "ORD-202609-0001",
+      "order_title": "Set Meja Tamu Ukir",
+      "order_status": "IN_PRODUCTION",
+      "progress_percentage": 50.0,
+      "total_active_stages": 8,
+      "completed_active_stages": 4,
+      "stages": [ ... ],
+      "recent_updates": [ ... ]
+    }
+  }
+  ```
+
+#### 2. Initialize Default 8 Stages
+- **Method / Path:** `POST /api/v1/orders/{orderId}/production/init-stages`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Response (200 OK):** Array of the 8 default stages.
+
+#### 3. Update Stage Status
+- **Method / Path:** `PATCH /api/v1/production-stages/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`)
+- **Request Body:** `{ "status": "IN_PROGRESS" }` (or `COMPLETED`)
+- **Constraint:** Tahapan QC tidak dapat diselesaikan via endpoint ini (HTTP 422, handoff untuk Phase 5).
+
+#### 4. Post Production Progress Update
+- **Method / Path:** `POST /api/v1/production-stages/{id}/updates`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`)
+- **Content-Type:** `multipart/form-data`
+- **Fields:** `description` (required), `media[]` (optional images), `media_visibility` (`INTERNAL`/`CUSTOMER`), `media_caption` (optional).
+- **Response (201 Created):** Update envelope with calculated `progress_snapshot`.
+
+#### 5. Upload Standalone Photo Evidence
+- **Method / Path:** `POST /api/v1/orders/{orderId}/media`
+- **Content-Type:** `multipart/form-data`
+- **Fields:** `file` (image max 10MB), `visibility` (`INTERNAL`/`CUSTOMER`), `caption`.
+
+#### 6. Delete Media
+- **Method / Path:** `DELETE /api/v1/media/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, or uploader)
 
 ### Quality Control
 - `POST /api/v1/orders/{id}/qc`

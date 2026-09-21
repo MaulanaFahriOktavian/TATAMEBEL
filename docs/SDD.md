@@ -72,17 +72,32 @@ DRAFT -> QUOTATION -> CONFIRMED -> WAITING_DP -> READY_FOR_PRODUCTION
 - **Kalkulasi Nilai:** `subtotal = qty * unit_price`, `total_amount = sum(subtotals)`. Dihitung otoritatif oleh backend secara atomik dalam database transaction.
 
 ## 6. Specification Versioning & Change Requests
-- Spesifikasi mebel diawali dengan status `DRAFT`.
-- Begitu disetujui, spesifikasi di-`LOCKED`.
-- Spesifikasi yang berstatus `LOCKED` tidak boleh di-edit secara destruktif.
-- Perubahan wajib melalui alur `Change Request` (PENDING -> APPROVED/REJECTED/CANCELLED).
-- Jika disetujui, versi baru spesifikasi dibuat (`version = version + 1`) untuk menjaga jejak audit.
+- Spesifikasi mebel diawali dengan status `DRAFT` (versi 1).
+- Begitu disetujui, spesifikasi di-`LOCKED`. Spesifikasi yang berstatus `LOCKED` tidak boleh di-edit secara destruktif (HTTP 422).
+- **Spesifikasi Operasional Aktif (Current Specification):** Didefinisikan secara ketat sebagai **versi tertinggi yang berstatus LOCKED** (`status = LOCKED`). Versi dalam status `DRAFT` tidak dianggap sebagai blueprint operasional sampai dikunci.
+- **Change Request:** Perubahan spesifikasi yang sudah `LOCKED` wajib melalui alur `Change Request` (`PENDING -> APPROVED / REJECTED / CANCELLED`).
+  - Menggunakan payload terstruktur `requested_changes` JSON yang memuat field teknis spesifik yang diminta berubah.
+  - Jika disetujui (`APPROVED`), backend secara deterministik membuat spesifikasi versi baru (`version = version + 1`) dalam status `DRAFT` untuk memungkinkan penyesuaian detail teknis sebelum dikunci kembali.
+  - Versi lama tetap tersimpan sebagai bukti audit historis yang tidak boleh diubah atau dihapus.
+- **Gerbang Status Pesanan:** Pesanan hanya dapat berpindah ke status `READY_FOR_PRODUCTION` jika seluruh item pesanan telah memiliki spesifikasi yang berstatus `LOCKED`.
 
 ## 7. Production Stage & Authoritative Progress Calculation
-- Progress produksi dihitung secara otoritatif oleh backend:
+- **Default Production Stages (8 Tahapan):**
+  1. Material Preparation
+  2. Cutting
+  3. Assembly
+  4. Sanding
+  5. Finishing
+  6. Final Assembly
+  7. QC (Quality Control)
+  8. Packing
+- **Template Configuration:** 8 tahapan standar dikonfigurasi melalui konfigurasi aplikasi (`config/production.php`) dan diinstansiasi ke pesanan (`production_stages.order_id`). Tahapan tidak di-seed sebagai global database records.
+- **QC Stage Handoff:** Tahapan QC tidak dapat diselesaikan (`COMPLETED`) melalui production tracking biasa oleh tim produksi. Tahapan QC merupakan handoff gate untuk modul QC Inspection (Phase 5).
+- **Authoritative Progress Calculation:**
+  Progress produksi dihitung secara otoritatif oleh backend:
   $$\text{Progress (\%)} = \frac{\text{Jumlah Tahapan Aktif Selesai}}{\text{Total Tahapan Aktif}} \times 100$$
 - Jika tidak ada tahapan aktif: progress = 0%.
-- Frontend dilarang keras menghitung sendiri persentase progres.
+- Frontend dilarang keras menghitung sendiri persentase progres. Progres dicatat sebagai telemetry snapshot pada setiap `production_updates`.
 
 ## 8. Quality Control & Defect Tracking
 - Kategori checklist QC: dimension, material, construction, surface, finishing, color, quantity, accessories, packaging.

@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChangeRequestController;
 use App\Http\Controllers\Api\CustomerController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\ProductionController;
+use App\Http\Controllers\Api\SpecificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,9 +32,9 @@ Route::prefix('auth')->name('api.v1.auth.')->group(function () {
     });
 });
 
-// Protected Business Routes (Phase 3: Customer & Order Management)
+// Protected Business Routes
 Route::middleware(['auth:sanctum', 'workshop.context'])->group(function () {
-    // Customers CRUD
+    // Customers CRUD (Phase 3)
     Route::apiResource('customers', CustomerController::class)->names([
         'index' => 'api.v1.customers.index',
         'store' => 'api.v1.customers.store',
@@ -39,11 +43,50 @@ Route::middleware(['auth:sanctum', 'workshop.context'])->group(function () {
         'destroy' => 'api.v1.customers.destroy',
     ]);
 
-    // Orders Management
+    // Orders Management (Phase 3)
     Route::prefix('orders')->name('api.v1.orders.')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::post('/', [OrderController::class, 'store'])->name('store');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus'])->name('change-status');
     });
+
+    // Specifications (Phase 4)
+    Route::prefix('orders/{orderId}/items/{itemId}/specifications')->name('api.v1.specifications.')->group(function () {
+        Route::post('/', [SpecificationController::class, 'store'])->name('store');
+        Route::get('/', [SpecificationController::class, 'index'])->name('index');
+        Route::get('/current', [SpecificationController::class, 'current'])->name('current');
+    });
+    Route::prefix('specifications')->name('api.v1.specifications.')->group(function () {
+        Route::get('/{id}', [SpecificationController::class, 'show'])->name('show');
+        Route::patch('/{id}', [SpecificationController::class, 'update'])->name('update');
+        Route::post('/{id}/lock', [SpecificationController::class, 'lock'])->name('lock');
+    });
+
+    // Change Requests (Phase 4)
+    Route::prefix('orders/{orderId}/change-requests')->name('api.v1.change-requests.')->group(function () {
+        Route::post('/', [ChangeRequestController::class, 'store'])->name('store');
+        Route::get('/', [ChangeRequestController::class, 'index'])->name('index');
+    });
+    Route::prefix('change-requests')->name('api.v1.change-requests.')->group(function () {
+        Route::get('/{id}', [ChangeRequestController::class, 'show'])->name('show');
+        Route::post('/{id}/approve', [ChangeRequestController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [ChangeRequestController::class, 'reject'])->name('reject');
+        Route::post('/{id}/cancel', [ChangeRequestController::class, 'cancel'])->name('cancel');
+    });
+
+    // Production Tracking & Media (Phase 4)
+    Route::prefix('orders/{orderId}')->group(function () {
+        Route::get('/production', [ProductionController::class, 'overview'])->name('api.v1.production.overview');
+        Route::post('/production/init-stages', [ProductionController::class, 'initStages'])->name('api.v1.production.init-stages');
+        Route::post('/production/stages', [ProductionController::class, 'storeStage'])->name('api.v1.production.stages.store');
+        Route::get('/production-updates', [ProductionController::class, 'indexUpdates'])->name('api.v1.production.updates.index');
+        Route::post('/media', [MediaController::class, 'store'])->name('api.v1.media.store');
+        Route::get('/media', [MediaController::class, 'index'])->name('api.v1.media.index');
+    });
+    Route::prefix('production-stages')->name('api.v1.production-stages.')->group(function () {
+        Route::patch('/{id}', [ProductionController::class, 'updateStageStatus'])->name('update-status');
+        Route::post('/{id}/updates', [ProductionController::class, 'storeUpdate'])->name('store-update');
+    });
+    Route::delete('/media/{id}', [MediaController::class, 'destroy'])->name('api.v1.media.destroy');
 });

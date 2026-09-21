@@ -53,4 +53,20 @@ class OrderItem extends Model
     {
         return $this->hasMany(Specification::class);
     }
+
+    public function changeRequests(): HasMany
+    {
+        return $this->hasMany(ChangeRequest::class);
+    }
+
+    /**
+     * Get the current operational specification (highest version that is LOCKED).
+     */
+    public function currentSpecification(): ?Specification
+    {
+        return $this->specifications()
+            ->where('status', \App\Enums\SpecificationStatus::LOCKED)
+            ->orderByDesc('version')
+            ->first();
+    }
 }

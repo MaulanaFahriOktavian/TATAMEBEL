@@ -167,6 +167,28 @@ class OrderService
             ]);
         }
 
+        // Phase 4 Gate: READY_FOR_PRODUCTION requires all order items to have LOCKED specifications
+        if ($newStatus === OrderStatus::READY_FOR_PRODUCTION) {
+            if ($order->orderItems()->exists()) {
+                foreach ($order->orderItems as $item) {
+                    $hasLockedSpec = $item->specifications()
+                        ->where('status', \App\Enums\SpecificationStatus::LOCKED)
+                        ->exists();
+
+                    if (! $hasLockedSpec) {
+                        throw ValidationException::withMessages([
+                            'status' => ['Semua item pesanan harus memiliki spesifikasi yang sudah dikunci (LOCKED) sebelum masuk status READY_FOR_PRODUCTION.'],
+                        ]);
+                    }
+                }
+            }
+
+            // Auto-initialize default 8 production stages if not already present
+            if (! $order->productionStages()->exists()) {
+                app(ProductionService::class)->initializeDefaultStages($order, $actor);
+            }
+        }
+
         // Apply timestamp rules based on state
         $updates = ['status' => $newStatus];
 

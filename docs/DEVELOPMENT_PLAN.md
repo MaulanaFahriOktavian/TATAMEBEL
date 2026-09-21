@@ -45,8 +45,25 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 
 ---
 
-### PHASE 4: Production Tracking
-- **Tujuan:** Pembuatan template tahapan produksi per pesanan, update progres pengerjaan, upload foto bukti pengerjaan (photo evidence internal/customer), dan authoritative progress calculation service.
+### PHASE 4: Specification & Production Tracking *(VERIFIED)*
+- **Tujuan:** Manajemen spesifikasi teknis produk, versioning spesifikasi immutable, tata kelola Change Request terstruktur, tracking tahapan produksi (8 default stages), authoritative backend progress calculation, dan pengelolaan media/bukti foto pengerjaan (internal & customer visibility).
+- **Implementasi:**
+  - `POST /api/v1/orders/{orderId}/items/{itemId}/specifications` (Create DRAFT v1 spec).
+  - `GET /api/v1/orders/{orderId}/items/{itemId}/specifications` (List version history).
+  - `GET /api/v1/orders/{orderId}/items/{itemId}/specifications/current` (Resolve highest LOCKED version).
+  - `PATCH /api/v1/specifications/{id}` (Update draft spec, rejected if locked).
+  - `POST /api/v1/specifications/{id}/lock` (Lock specification).
+  - `POST /api/v1/orders/{orderId}/change-requests` (Submit change request with structured `requested_changes` JSON).
+  - `POST /api/v1/change-requests/{id}/approve` (Spawn new specification version `v+1` in `DRAFT` status).
+  - `POST /api/v1/change-requests/{id}/reject` (Reject with required `review_note`).
+  - `GET /api/v1/orders/{orderId}/production` (Authoritative progress calculation and overview).
+  - `POST /api/v1/orders/{orderId}/production/init-stages` (Instantiate 8 default stages per order).
+  - `PATCH /api/v1/production-stages/{id}` (Update stage status, QC stage protected).
+  - `POST /api/v1/production-stages/{id}/updates` (Create update with progress snapshot and media).
+  - `POST /api/v1/orders/{orderId}/media` & `DELETE /api/v1/media/{id}` (Media photo evidence).
+  - Order state machine integration: `READY_FOR_PRODUCTION` requires all items to have `LOCKED` specifications.
+  - Automated tests lulus 100% (91 tests, 685 assertions).
+- **Status:** Selesai dan terverifikasi.
 
 ---
 

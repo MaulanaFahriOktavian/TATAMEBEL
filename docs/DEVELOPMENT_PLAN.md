@@ -67,8 +67,19 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 
 ---
 
-### PHASE 5: Quality Control
+### PHASE 5: Quality Control & Defect Tracking
 - **Tujuan:** Checklist inspeksi QC per kategori, pencatatan cacat (defect tracking: severity, rework, resolution), dan validasi syarat sebelum proses packing dan shipping.
+- **Deliverables:**
+  - Standard checklist template (9 kategori SDD di `config/qc.php`) diinisialisasi otomatis dengan status awal belum dinilai (`null`).
+  - Siklus inspeksi immutable: sesi draft (`PENDING`) dapat diedit, sesi final (`PASSED`/`REWORK`/`FAILED`) terkunci permanen.
+  - Re-inspeksi historis untuk verifikasi hasil rework tanpa menimpa rekaman lama.
+  - Siklus hidup defek: `OPEN` -> `IN_REWORK` -> `RESOLVED` (wajib catatan resolusi) dan persetujuan konsesi `ACCEPTED` (otoritas eksklusif `OWNER`/`ADMIN` dengan justifikasi).
+  - Media photo evidence tertaut ke `qc_inspection_id` dan `qc_defect_id` dengan default `INTERNAL`.
+  - Gate otoritatif backend `QC -> PACKING` pada `OrderService::changeStatus`.
+  - Sinkronisasi otomatis penyelesaian tahapan produksi Sequence 7 (`QC`) saat inspeksi `PASSED`.
+  - 10 endpoint API di bawah `/api/v1` terlindungi Sanctum dan isolasi multi-tenant.
+  - Automated tests lulus 100% (32 test QC baru, 123 tests total proyek).
+- **Status:** Selesai dan terverifikasi.
 
 ---
 

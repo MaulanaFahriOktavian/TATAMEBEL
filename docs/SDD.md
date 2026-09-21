@@ -100,11 +100,25 @@ DRAFT -> QUOTATION -> CONFIRMED -> WAITING_DP -> READY_FOR_PRODUCTION
 - Frontend dilarang keras menghitung sendiri persentase progres. Progres dicatat sebagai telemetry snapshot pada setiap `production_updates`.
 
 ## 8. Quality Control & Defect Tracking
-- Kategori checklist QC: dimension, material, construction, surface, finishing, color, quantity, accessories, packaging.
-- Status QC: `PENDING`, `PASSED`, `FAILED`, `REWORK`.
-- Defect severity: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
-- Defect status: `OPEN`, `IN_REWORK`, `RESOLVED`, `ACCEPTED`.
-- Tahap Packing mensyaratkan QC lolos (PASSED atau defek telah RESOLVED/ACCEPTED).
+- **Checklist Template (9 Kategori SDD):** Dikonfigurasi di `config/qc.php`: `dimension`, `material`, `construction`, `surface`, `finishing`, `color`, `quantity`, `accessories`, `packaging`.
+- **Status Awal Butir Checklist:** Butir checklist pada inspeksi baru berstatus `null` (belum dinilai). Finalisasi `PASSED` mewajibkan seluruh butir telah dievaluasi (`PASS` atau `NA`).
+- **Status Sesi Inspeksi:** `PENDING` (draft/dapat diedit), `PASSED` (lulus sempurna), `REWORK` (memerlukan perbaikan tukang), `FAILED` (gagal fatal non-rework).
+- **Immutability & Re-inspeksi:** Sesi inspeksi yang telah difinalisasi (`PASSED`, `REWORK`, `FAILED`) bersifat **permanen dan immutable (terkunci)** termasuk berkas media yang tertaut (penambahan media baru ditolak HTTP 422). Perbaikan fisik diverifikasi melalui sesi inspeksi baru (*re-inspection*), mempertahankan rekam jejak audit kualitas lengkap.
+- **Alur Penanganan Inspeksi Gagal (FAILED Workflow):** Jika inspeksi berstatus `FAILED`, pesanan tetap berada pada status `QC` dan tidak dapat masuk ke `PACKING`. Workshop melakukan evaluasi teknis/remake dan memverifikasi kelulusan melalui re-inspeksi baru tanpa menambahkan status order baru atau memundurkan ke `IN_PRODUCTION`.
+- **Defect Severity:** `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`.
+- **Defect Lifecycle:**
+  - `OPEN`: Cacat ditemukan dan dicatat pada sesi inspeksi draft.
+  - `IN_REWORK`: Tukang mengambil alih pengerjaan perbaikan fisik.
+  - `RESOLVED`: Perbaikan fisik selesai dengan kewajiban mengisi catatan tindakan korektif (`resolution`).
+  - `ACCEPTED`: Konsesi/waiver toleransi kualitas (misal corak serat alami kayu) yang **hanya dapat disetujui oleh OWNER atau ADMIN** dengan catatan justifikasi wajib. Bersifat final dan tidak dapat diubah kembali ke `OPEN`, `IN_REWORK`, atau `RESOLVED`.
+- **QC → PACKING Gate (Otoritatif Backend):** Transisi pesanan ke `PACKING` mensyaratkan:
+  1. Terdapat minimal 1 catatan inspeksi QC.
+  2. Inspeksi terbaru berstatus `PASSED`.
+  3. Seluruh butir checklist pada inspeksi lulus bernilai `PASS` atau `NA`.
+  4. Nol defek aktif (seluruh defek pada pesanan wajib berstatus `RESOLVED` atau `ACCEPTED`).
+  5. Tahapan produksi Sequence 7 (`QC`) berstatus `COMPLETED`.
+- **Sinkronisasi Otomatis Tahapan Produksi:** Saat sesi inspeksi QC dibuat, tahapan Sequence 7 (`QC`) yang masih `PENDING` otomatis berubah ke `IN_PROGRESS`. Finalisasi inspeksi sebagai `PASSED` secara otomatis menyelesaikan tahapan produksi `QC` (`completed_at = now()`) melalui boundary service `ProductionService::completeQcStageFromInspection()`. Status pesanan tetap berada pada `QC` selama proses rework tanpa pemunduran ke `IN_PRODUCTION`.
+- **Status Pembayaran (Payment Scope):** Payment tracking belum diimplementasikan dan akan ditangani pada fase berikutnya sesuai Development Plan.
 
 ## 9. Media & Visibility
 - File foto evidence disimpan melalui Laravel Storage abstraction.

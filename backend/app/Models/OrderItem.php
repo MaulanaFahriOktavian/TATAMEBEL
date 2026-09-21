@@ -59,6 +59,11 @@ class OrderItem extends Model
         return $this->hasMany(ChangeRequest::class);
     }
 
+    public function qcItems(): HasMany
+    {
+        return $this->hasMany(QcItem::class);
+    }
+
     /**
      * Get the current operational specification (highest version that is LOCKED).
      */

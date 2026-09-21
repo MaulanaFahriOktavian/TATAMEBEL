@@ -24,6 +24,7 @@ class Media extends Model
         'order_id',
         'production_update_id',
         'qc_inspection_id',
+        'qc_defect_id',
         'uploaded_by',
         'file_path',
         'original_name',
@@ -64,6 +65,11 @@ class Media extends Model
     public function qcInspection(): BelongsTo
     {
         return $this->belongsTo(QcInspection::class);
+    }
+
+    public function qcDefect(): BelongsTo
+    {
+        return $this->belongsTo(QcDefect::class);
     }
 
     public function uploader(): BelongsTo

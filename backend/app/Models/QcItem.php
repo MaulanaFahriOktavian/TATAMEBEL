@@ -18,6 +18,7 @@ class QcItem extends Model
     protected $fillable = [
         'workshop_id',
         'qc_inspection_id',
+        'order_item_id',
         'category',
         'item',
         'status',
@@ -44,6 +45,11 @@ class QcItem extends Model
     public function qcInspection(): BelongsTo
     {
         return $this->belongsTo(QcInspection::class);
+    }
+
+    public function orderItem(): BelongsTo
+    {
+        return $this->belongsTo(OrderItem::class);
     }
 
     public function qcDefects(): HasMany

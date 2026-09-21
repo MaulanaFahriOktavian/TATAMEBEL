@@ -6,6 +6,8 @@ use App\Enums\MediaVisibility;
 use App\Models\Media;
 use App\Models\Order;
 use App\Models\ProductionUpdate;
+use App\Models\QcDefect;
+use App\Models\QcInspection;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +43,9 @@ class MediaService
         UploadedFile $file,
         array $data,
         ?User $actor = null,
-        ?ProductionUpdate $update = null
+        ?ProductionUpdate $update = null,
+        ?QcInspection $qcInspection = null,
+        ?QcDefect $qcDefect = null
     ): Media {
         // Validate MIME type
         $mimeType = $file->getMimeType();
@@ -69,7 +73,9 @@ class MediaService
         $media = Media::create([
             'workshop_id' => $order->workshop_id,
             'order_id' => $order->id,
-            'production_update_id' => $update?->id,
+            'production_update_id' => $update?->id ?? ($data['production_update_id'] ?? null),
+            'qc_inspection_id' => $qcInspection?->id ?? ($data['qc_inspection_id'] ?? null),
+            'qc_defect_id' => $qcDefect?->id ?? ($data['qc_defect_id'] ?? null),
             'uploaded_by' => $actor->id,
             'file_path' => $storedPath,
             'original_name' => $file->getClientOriginalName(),

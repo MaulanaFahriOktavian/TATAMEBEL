@@ -189,6 +189,61 @@ class OrderService
             }
         }
 
+        // Phase 5 Gate: QC -> PACKING requires passed QC inspection and zero unresolved defects
+        if ($newStatus === OrderStatus::PACKING) {
+            // 1. Must have at least one QC inspection
+            if (! $order->qcInspections()->exists()) {
+                throw ValidationException::withMessages([
+                    'status' => ['Pesanan belum memiliki catatan inspeksi QC. Lakukan inspeksi QC terlebih dahulu sebelum masuk ke tahap PACKING.'],
+                ]);
+            }
+
+            // 2. Latest inspection must be PASSED
+            $latestInspection = $order->qcInspections()->latest('id')->first();
+            if ($latestInspection->status !== \App\Enums\QcInspectionStatus::PASSED) {
+                throw ValidationException::withMessages([
+                    'status' => ["Inspeksi QC terakhir belum berstatus PASSED (status saat ini: {$latestInspection->status->value}). Lakukan inspeksi ulang hingga lulus sebelum masuk ke tahap PACKING."],
+                ]);
+            }
+
+            // 3. All checklist items on the passed inspection must be evaluated (PASS or NA)
+            $unresolvedItemsCount = $latestInspection->qcItems()
+                ->where(function ($q) {
+                    $q->whereNull('status')
+                        ->orWhere('status', \App\Enums\QcItemStatus::FAIL);
+                })
+                ->count();
+
+            if ($unresolvedItemsCount > 0) {
+                throw ValidationException::withMessages([
+                    'status' => ["Terdapat {$unresolvedItemsCount} butir checklist pada inspeksi terakhir yang belum dinilai atau berstatus GAGAL (FAIL)."],
+                ]);
+            }
+
+            // 4. Zero unresolved defects (no OPEN or IN_REWORK) across the order
+            $unresolvedDefectsCount = \App\Models\QcDefect::where('workshop_id', $order->workshop_id)
+                ->whereHas('qcInspection', function ($q) use ($order) {
+                    $q->where('order_id', $order->id);
+                })
+                ->whereIn('status', [\App\Enums\QcDefectStatus::OPEN, \App\Enums\QcDefectStatus::IN_REWORK])
+                ->count();
+
+            if ($unresolvedDefectsCount > 0) {
+                throw ValidationException::withMessages([
+                    'status' => ["Masih terdapat {$unresolvedDefectsCount} temuan cacat (defect) pada pesanan ini yang belum diselesaikan (status OPEN atau IN_REWORK). Seluruh defek wajib berstatus RESOLVED atau ACCEPTED sebelum masuk ke tahap PACKING."],
+                ]);
+            }
+
+            // 5. Ensure QC production stage is completed
+            $qcStage = $order->productionStages()
+                ->whereRaw("UPPER(TRIM(name)) = 'QC'")
+                ->first();
+
+            if ($qcStage && $qcStage->status !== \App\Enums\ProductionStageStatus::COMPLETED) {
+                app(ProductionService::class)->completeQcStageFromInspection($order, $actor);
+            }
+        }
+
         // Apply timestamp rules based on state
         $updates = ['status' => $newStatus];
 

@@ -670,6 +670,222 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Quality Control & Defect Tracking",
+      "item": [
+        {
+          "name": "List QC Inspections for Order",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/qc-inspections",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{order_id}}", "qc-inspections"]
+            },
+            "description": "List all QC inspections for an order."
+          },
+          "response": []
+        },
+        {
+          "name": "Create QC Inspection",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Pemeriksaan pra-pengemasan meja makan\",\n  \"order_item_id\": {{item_id}}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/qc-inspections",
+              "host": ["{{base_url}}"],
+              "path": ["orders", "{{order_id}}", "qc-inspections"]
+            },
+            "description": "Create a new QC inspection with default checklist template."
+          },
+          "response": []
+        },
+        {
+          "name": "Get QC Inspection Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/qc-inspections/{{qc_inspection_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["qc-inspections", "{{qc_inspection_id}}"]
+            },
+            "description": "Get detailed QC inspection including checklist items, defects, and photo evidence."
+          },
+          "response": []
+        },
+        {
+          "name": "Evaluate Checklist Items",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"id\": 1,\n      \"status\": \"PASS\",\n      \"notes\": \"Ukuran sesuai gambar kerja\"\n    },\n    {\n      \"id\": 2,\n      \"status\": \"FAIL\",\n      \"notes\": \"Permukaan ada goresan kasar\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/qc-inspections/{{qc_inspection_id}}/items",
+              "host": ["{{base_url}}"],
+              "path": ["qc-inspections", "{{qc_inspection_id}}", "items"]
+            },
+            "description": "Evaluate batch of checklist items while inspection is in PENDING state."
+          },
+          "response": []
+        },
+        {
+          "name": "Finalize QC Inspection",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PASSED\",\n  \"notes\": \"Kualitas memenuhi standar mutu bengkel\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/qc-inspections/{{qc_inspection_id}}/finalize",
+              "host": ["{{base_url}}"],
+              "path": ["qc-inspections", "{{qc_inspection_id}}", "finalize"]
+            },
+            "description": "Finalize QC inspection to PASSED, REWORK, or FAILED. Finalized inspections are immutable."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Inspection Photo Evidence",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "visibility", "value": "INTERNAL", "type": "text" },
+                { "key": "caption", "value": "Foto verifikasi hasil akhir meja makan", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/qc-inspections/{{qc_inspection_id}}/media",
+              "host": ["{{base_url}}"],
+              "path": ["qc-inspections", "{{qc_inspection_id}}", "media"]
+            },
+            "description": "Upload photo evidence for a QC inspection."
+          },
+          "response": []
+        },
+        {
+          "name": "Log QC Defect",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"qc_item_id\": 2,\n  \"description\": \"Lapisan pernis tidak rata dan ada lelehan pada kaki meja\",\n  \"severity\": \"MEDIUM\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/qc-inspections/{{qc_inspection_id}}/defects",
+              "host": ["{{base_url}}"],
+              "path": ["qc-inspections", "{{qc_inspection_id}}", "defects"]
+            },
+            "description": "Log a defect during a PENDING inspection."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Defect Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\",\n  \"resolution\": \"Permukaan diamplas ulang grit 400 dan disemprot top coat satin ulang.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/qc-defects/{{defect_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["qc-defects", "{{defect_id}}", "status"]
+            },
+            "description": "Update defect status to IN_REWORK, RESOLVED, or ACCEPTED (Owner/Admin only)."
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Defect Photo Evidence",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" },
+                { "key": "visibility", "value": "INTERNAL", "type": "text" },
+                { "key": "caption", "value": "Foto cacat pernis leleh", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/qc-defects/{{defect_id}}/media",
+              "host": ["{{base_url}}"],
+              "path": ["qc-defects", "{{defect_id}}", "media"]
+            },
+            "description": "Upload photo evidence directly linked to a defect record."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Defect",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Accept", "value": "application/json", "type": "text" },
+              { "key": "Authorization", "value": "Bearer {{token}}", "type": "text" }
+            ],
+            "url": {
+              "raw": "{{base_url}}/qc-defects/{{defect_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["qc-defects", "{{defect_id}}"]
+            },
+            "description": "Delete a defect record while parent inspection is in PENDING state."
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

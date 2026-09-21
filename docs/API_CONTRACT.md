@@ -446,9 +446,146 @@ Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
 - **Method / Path:** `DELETE /api/v1/media/{id}`
 - **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, or uploader)
 
-### Quality Control
-- `POST /api/v1/orders/{id}/qc`
-- `POST /api/v1/qc/{id}/defects`
+### Quality Control & Defect Tracking (Phase 5)
+
+#### 1. List QC Inspections for an Order
+- **Method / Path:** `GET /api/v1/orders/{orderId}/qc-inspections`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`, `QC`)
+- **Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "QC inspections retrieved successfully.",
+  "data": [
+    {
+      "id": 1,
+      "order_id": 1,
+      "status": "PASSED",
+      "notes": "Pemeriksaan akhir mutu mebel",
+      "inspected_at": "2026-09-21T14:00:00Z",
+      "inspector": {
+        "id": 4,
+        "name": "Budi Setiawan (Inspektur QC)",
+        "role": "QC"
+      },
+      "items_count": 9,
+      "defects_count": 0,
+      "created_at": "2026-09-21T13:30:00Z"
+    }
+  ],
+  "meta": { "current_page": 1, "last_page": 1, "per_page": 15, "total": 1 }
+}
+```
+
+#### 2. Create QC Inspection
+- **Method / Path:** `POST /api/v1/orders/{orderId}/qc-inspections`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `QC`)
+- **Request Body:**
+```json
+{
+  "notes": "Sesi inspeksi pra-packing meja makan",
+  "order_item_id": 1,
+  "custom_items": [
+    {
+      "category": "special",
+      "item": "Kekokohan tarikan laci rahasia",
+      "notes": "Sesuai request customer di WhatsApp"
+    }
+  ]
+}
+```
+- **Response (201 Created):** Inspection created with 9 default template items (`status: null`) and any custom items.
+
+#### 3. Get QC Inspection Detail
+- **Method / Path:** `GET /api/v1/qc-inspections/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`, `QC`)
+- **Response (200 OK):** Detailed inspection with `items`, `defects`, `media`, and inspector details.
+
+#### 4. Evaluate Checklist Items (Batch)
+- **Method / Path:** `POST /api/v1/qc-inspections/{id}/items`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `QC`)
+- **Constraint:** Hanya diizinkan saat inspeksi berstatus `PENDING`.
+- **Request Body:**
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "status": "PASS",
+      "notes": "Ukuran sesuai gambar kerja LOCKED"
+    },
+    {
+      "id": 2,
+      "status": "FAIL",
+      "notes": "Terdapat goresan pada permukaan daun meja"
+    },
+    {
+      "id": 3,
+      "status": "NA",
+      "notes": "Tidak menggunakan kain jok"
+    }
+  ]
+}
+```
+
+#### 5. Finalize QC Inspection
+- **Method / Path:** `POST /api/v1/qc-inspections/{id}/finalize`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `QC`)
+- **Constraint:** Inspeksi yang difinalisasi bersifat **IMMUTABLE**. Finalisasi `PASSED` mewajibkan seluruh butir dinilai, tidak ada item `FAIL`, tidak ada defek `OPEN`/`IN_REWORK`, dan otomatis menyelesaikan production stage Sequence 7 (`QC`).
+- **Request Body:**
+```json
+{
+  "status": "PASSED",
+  "notes": "Seluruh poin checklist telah sesuai standar mutu bengkel."
+}
+```
+
+#### 6. Upload Inspection Photo Evidence
+- **Method / Path:** `POST /api/v1/qc-inspections/{id}/media`
+- **Content-Type:** `multipart/form-data`
+- **Fields:** `file` (image max 10MB), `visibility` (`INTERNAL`/`CUSTOMER`, default `INTERNAL`), `caption`.
+
+#### 7. Log QC Defect
+- **Method / Path:** `POST /api/v1/qc-inspections/{id}/defects`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `QC`)
+- **Constraint:** Hanya dapat dicatat saat inspeksi masih berstatus `PENDING`.
+- **Request Body:**
+```json
+{
+  "qc_item_id": 2,
+  "description": "Lapisan pernis tidak rata dan ada lelehan pada kaki meja kanan depan.",
+  "severity": "MEDIUM"
+}
+```
+
+#### 8. Update Defect Lifecycle Status
+- **Method / Path:** `PATCH /api/v1/qc-defects/{id}/status`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `PRODUCTION`, `QC`)
+- **RBAC Rule:** Status `ACCEPTED` (waiver) **hanya boleh diubah oleh `OWNER` atau `ADMIN`** dan wajib mencantumkan justifikasi. Staf `PRODUCTION` dan `QC` dapat mengubah ke `IN_REWORK` dan `RESOLVED` (wajib catatan tindakan korektif).
+- **Request Body (RESOLVED):**
+```json
+{
+  "status": "RESOLVED",
+  "resolution": "Permukaan diamplas ulang grit 400 dan disemprot top coat satin ulang."
+}
+```
+- **Request Body (ACCEPTED - Owner/Admin):**
+```json
+{
+  "status": "ACCEPTED",
+  "resolution": "Variasi serat alami kayu jati disetujui owner dan telah dikonfirmasi ke customer."
+}
+```
+
+#### 9. Upload Defect Photo Evidence
+- **Method / Path:** `POST /api/v1/qc-defects/{id}/media`
+- **Content-Type:** `multipart/form-data`
+- **Fields:** `file` (image max 10MB), `visibility` (`INTERNAL`/`CUSTOMER`, default `INTERNAL`), `caption`.
+
+#### 10. Delete QC Defect
+- **Method / Path:** `DELETE /api/v1/qc-defects/{id}`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`, `QC`)
+- **Constraint:** Hanya dapat dihapus saat inspeksi induk masih berstatus `PENDING`.
 
 ### Payments & Shipping
 - `GET /api/v1/orders/{id}/payments`

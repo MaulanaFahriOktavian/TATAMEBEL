@@ -27,6 +27,7 @@ class MediaFactory extends Factory
             },
             'production_update_id' => null,
             'qc_inspection_id' => null,
+            'qc_defect_id' => null,
             'uploaded_by' => function (array $attributes) {
                 return User::factory()->create([
                     'workshop_id' => $attributes['workshop_id'],

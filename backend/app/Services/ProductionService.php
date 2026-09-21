@@ -258,4 +258,51 @@ class ProductionService
 
         return true;
     }
+
+    /**
+     * Authoritative completion of QC production stage initiated strictly by passing a QC Inspection (Phase 5).
+     */
+    public function completeQcStageFromInspection(Order $order, ?User $actor = null): ?ProductionStage
+    {
+        $qcStage = $order->productionStages()
+            ->whereRaw("UPPER(TRIM(name)) = 'QC'")
+            ->first();
+
+        if (! $qcStage) {
+            return null;
+        }
+
+        if ($qcStage->status === ProductionStageStatus::COMPLETED) {
+            return $qcStage;
+        }
+
+        $updates = [
+            'status' => ProductionStageStatus::COMPLETED,
+            'completed_at' => now(),
+        ];
+
+        if (is_null($qcStage->started_at)) {
+            $updates['started_at'] = now();
+        }
+
+        $qcStage->update($updates);
+
+        ActivityLogService::log(
+            workshopId: $qcStage->workshop_id,
+            action: 'PRODUCTION_STAGE_UPDATED',
+            entity: $qcStage,
+            description: "Tahapan produksi '{$qcStage->name}' diselesaikan secara otomatis setelah inspeksi QC dinyatakan LULUS (PASSED).",
+            user: $actor,
+            orderId: $qcStage->order_id,
+            metadata: [
+                'stage_id' => $qcStage->id,
+                'name' => $qcStage->name,
+                'status' => ProductionStageStatus::COMPLETED->value,
+                'completed_at' => $qcStage->completed_at?->toIso8601String(),
+                'trigger' => 'QC_INSPECTION_PASSED',
+            ]
+        );
+
+        return $qcStage;
+    }
 }

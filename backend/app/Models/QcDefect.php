@@ -7,6 +7,7 @@ use App\Enums\QcDefectStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class QcDefect extends Model
 {
@@ -53,5 +54,10 @@ class QcDefect extends Model
     public function qcItem(): BelongsTo
     {
         return $this->belongsTo(QcItem::class);
+    }
+
+    public function media(): HasMany
+    {
+        return $this->hasMany(Media::class);
     }
 }

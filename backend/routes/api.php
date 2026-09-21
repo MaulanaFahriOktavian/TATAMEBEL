@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductionController;
+use App\Http\Controllers\Api\QcDefectController;
+use App\Http\Controllers\Api\QcInspectionController;
 use App\Http\Controllers\Api\SpecificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -89,4 +91,22 @@ Route::middleware(['auth:sanctum', 'workshop.context'])->group(function () {
         Route::post('/{id}/updates', [ProductionController::class, 'storeUpdate'])->name('store-update');
     });
     Route::delete('/media/{id}', [MediaController::class, 'destroy'])->name('api.v1.media.destroy');
+
+    // Quality Control & Defect Tracking (Phase 5)
+    Route::prefix('orders/{orderId}/qc-inspections')->name('api.v1.qc-inspections.')->group(function () {
+        Route::get('/', [QcInspectionController::class, 'index'])->name('index');
+        Route::post('/', [QcInspectionController::class, 'store'])->name('store');
+    });
+    Route::prefix('qc-inspections')->name('api.v1.qc-inspections.')->group(function () {
+        Route::get('/{id}', [QcInspectionController::class, 'show'])->name('show');
+        Route::post('/{id}/items', [QcInspectionController::class, 'evaluateItems'])->name('evaluate-items');
+        Route::post('/{id}/finalize', [QcInspectionController::class, 'finalize'])->name('finalize');
+        Route::post('/{id}/media', [QcInspectionController::class, 'uploadMedia'])->name('media');
+        Route::post('/{id}/defects', [QcDefectController::class, 'store'])->name('defects.store');
+    });
+    Route::prefix('qc-defects')->name('api.v1.qc-defects.')->group(function () {
+        Route::patch('/{id}/status', [QcDefectController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{id}/media', [QcDefectController::class, 'uploadMedia'])->name('media');
+        Route::delete('/{id}', [QcDefectController::class, 'destroy'])->name('destroy');
+    });
 });

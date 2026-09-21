@@ -283,6 +283,15 @@ class OrderManagementTest extends TestCase
         ];
 
         foreach ($validSequence as $targetStatus) {
+            if ($targetStatus === 'PACKING') {
+                \App\Models\QcInspection::factory()->create([
+                    'workshop_id' => $this->workshopA->id,
+                    'order_id' => $order->id,
+                    'status' => \App\Enums\QcInspectionStatus::PASSED,
+                    'inspected_at' => now(),
+                ]);
+            }
+
             $response = $this->withHeader('Authorization', 'Bearer '.$token)
                 ->patchJson('/api/v1/orders/'.$order->id.'/status', ['status' => $targetStatus]);
 

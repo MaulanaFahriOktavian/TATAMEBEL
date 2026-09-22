@@ -565,6 +565,9 @@
                   "    pm.expect(jsonData.data.status).to.eql('DRAFT');",
                   "    pm.expect(jsonData.data.order_number).to.match(/^ORD-\\d{6}-\\d{4}$/);",
                   "    pm.environment.set(\"order_id\", jsonData.data.id);",
+                  "    if (jsonData.data.public_token) {",
+                  "        pm.environment.set(\"public_token\", jsonData.data.public_token);",
+                  "    }",
                   "});"
                 ]
               }
@@ -702,7 +705,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"notes\": \"Pemeriksaan pra-pengemasan meja makan\",\n  \"order_item_id\": {{item_id}}\n}"
+              "raw": "{\n  \"notes\": \"Pemeriksaan pra-pengemasan meja makan\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/orders/{{order_id}}/qc-inspections",
@@ -711,7 +714,24 @@
             },
             "description": "Create a new QC inspection with default checklist template."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.environment.set(\"qc_inspection_id\", jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get QC Inspection Detail",
@@ -819,7 +839,24 @@
             },
             "description": "Log a defect during a PENDING inspection."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.id) {",
+                  "    pm.environment.set(\"defect_id\", jsonData.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Update Defect Status",

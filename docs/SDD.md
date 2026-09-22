@@ -135,6 +135,29 @@ DRAFT -> QUOTATION -> CONFIRMED -> WAITING_DP -> READY_FOR_PRODUCTION
 - **Proteksi Rate Limiting & Anti-Enumeration:** Endpoint publik dilindungi oleh middleware `throttle:60,1`. Token yang tidak valid menghasilkan HTTP `404 Not Found` generik yang seragam.
 - **Frontend Mobile-First:** Rute React `/track/:publicToken` dirancang mobile-first (optimal 360–430px) untuk pelanggan WhatsApp, dengan estetika bersih bertema kayu mebel hangat dan penanganan 7 state antarmuka yang andal.
 
-## 11. WhatsApp Integration Philosophy
-- TATAMEBEL menyediakan templated progress update message dengan tautan customer portal.
-- Staf cukup mengklik "Kirim via WhatsApp" untuk membuka WhatsApp Web/Desktop dengan pesan terisi otomatis.
+## 11. WhatsApp Workflow & Manual Dispatch Architecture (Phase 7)
+- **Filosofi Integrasi:** Menghubungkan Order TATAMEBEL dengan kanal WhatsApp secara sederhana dan aman tanpa ketergantungan API pihak ketiga: `Order → generate message → generate wa.me URL → admin manually sends`.
+- **Scope Boundary (Tegas):**
+  - **Diimplementasikan:** Pembuatan pesan terstruktur berbasis template, normalisasi nomor telepon pelanggan, pembentukan tautan `https://wa.me/{phone}?text={encoded}`, pencatatan audit log, dan tombol aksi pada antarmuka Order Detail admin.
+  - **Tidak Diimplementasikan (Di Luar Scope Phase 7):** WhatsApp Business API resmi, pengiriman otomatis (*automatic sending*), webhook penerimaan pesan, chatbot AI/otomatisasi balasan, pesan siaran (*broadcast*), OTP, dan sinkronisasi obrolan pelanggan.
+- **Normalisasi Nomor Telepon (`WhatsAppNumberNormalizer`):**
+  - Nomor ponsel Indonesia dinormalisasi ke standar internasional tanpa tanda plus: `0812...` → `62812...`, `+62812...` → `62812...`, `62812...` → `62812...`.
+  - Karakter pemformatan (spasi, tanda hubung, titik, tanda kurung) dibersihkan secara aman.
+  - Nomor yang kosong, tidak lengkap, atau tidak valid menghasilkan penolakan validasi bisnis HTTP `422 Unprocessable Entity` tanpa transformasi agresif yang merusak data.
+- **Pemetaan Template Berdasarkan `OrderStatus`:**
+  - `DRAFT`, `QUOTATION`, `CONFIRMED`, `WAITING_DP` → Template `ORDER_CREATED` (Konfirmasi pencatatan pesanan).
+  - `READY_FOR_PRODUCTION`, `IN_PRODUCTION` → Template `IN_PRODUCTION` (Pemberitahuan masuk jalur produksi).
+  - `QC`, `PACKING`, `READY_TO_SHIP`, `SHIPPED` → Template progres umum (*generic progress template* yang aman dan tidak mengklaim pesanan baru dibuat).
+  - `COMPLETED` → Template `COMPLETED` (Pemberitahuan pesanan selesai).
+  - `CANCELLED` → Ditolak dengan HTTP `422 Unprocessable Entity` ("WhatsApp sharing is unavailable for cancelled orders.").
+- **Batasan Keamanan & Kerahasiaan Data:**
+  - Pesan WhatsApp dan respons data payload **dilarang keras** memuat: catatan internal bengkel, detail cacat QC / hasil rework, ID internal database, informasi finansial (harga satuan, subtotal, margin, rekening), token Sanctum, atau `public_token` sebagai field JSON mandiri.
+  - Tautan pelacakan publik merujuk langsung ke customer portal: `{FRONTEND_URL}/track/{public_token}`.
+- **Otorisasi & Hak Akses Peran:**
+  - Hanya peran `OWNER` dan `ADMIN` yang diizinkan menghasilkan tautan WhatsApp (`GET /api/v1/orders/{id}/whatsapp`).
+  - Peran `PRODUCTION` dan `QC` ditolak tegas dengan HTTP `403 Forbidden`.
+  - Permintaan lintas-tenant (*cross-tenant*) menghasilkan HTTP `404 Not Found`.
+- **Rekam Jejak Audit (`ActivityLog`):**
+  - Setiap pembentukan tautan WhatsApp dicatat sebagai aktivitas `WHATSAPP_SHARE_GENERATED` dengan metadata minimal `{"order_id": <id>, "channel": "whatsapp"}`.
+  - Isi pesan lengkap, nomor telepon, dan URL WhatsApp tidak disimpan ke tabel log audit demi privasi dan efisiensi penyimpanan.
+

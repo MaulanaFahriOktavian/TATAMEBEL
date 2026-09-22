@@ -25,6 +25,7 @@ class OrderResource extends JsonResource
             'total_amount' => (float) $this->total_amount,
             'notes' => $this->notes,
             'public_token' => $this->public_token,
+            'tracking_url' => $this->public_token ? rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:5173')), '/').'/track/'.$this->public_token : null,
             'confirmed_at' => $this->confirmed_at?->toISOString(),
             'completed_at' => $this->completed_at?->toISOString(),
             'cancelled_at' => $this->cancelled_at?->toISOString(),

@@ -9,6 +9,7 @@ use App\Http\Requests\Order\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Services\WhatsAppMessageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -109,6 +110,33 @@ class OrderController extends Controller
             'success' => true,
             'message' => 'Order status updated successfully.',
             'data' => new OrderResource($updated),
+        ], 200);
+    }
+
+    /**
+     * Generate WhatsApp share message and wa.me URL for the order.
+     */
+    public function shareWhatsApp(Request $request, int|string $id, WhatsAppMessageService $whatsAppService): JsonResponse
+    {
+        $workshop = $request->attributes->get('workshop') ?? $request->user()->workshop;
+        $order = $workshop->orders()->with(['customer', 'orderItems', 'workshop'])->whereKey($id)->first();
+
+        if (! $order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.',
+                'errors' => new \stdClass(),
+            ], 404);
+        }
+
+        Gate::authorize('shareWhatsApp', $order);
+
+        $data = $whatsAppService->generateShareData($order, $request->user());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'WhatsApp share data generated.',
+            'data' => $data,
         ], 200);
     }
 }

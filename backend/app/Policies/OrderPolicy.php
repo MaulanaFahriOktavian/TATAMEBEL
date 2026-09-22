@@ -43,4 +43,13 @@ class OrderPolicy
         return $user->hasAnyRole([UserRole::OWNER, UserRole::ADMIN])
             && $this->belongsToSameWorkshop($user, $order);
     }
+
+    /**
+     * Determine whether the user can generate WhatsApp share data for the order.
+     */
+    public function shareWhatsApp(User $user, Order $order): bool
+    {
+        return $user->hasAnyRole([UserRole::OWNER, UserRole::ADMIN])
+            && $this->belongsToSameWorkshop($user, $order);
+    }
 }

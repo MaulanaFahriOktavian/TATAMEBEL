@@ -934,6 +934,102 @@
           ]
         }
       ]
+    },
+    {
+      "name": "WhatsApp Workflow",
+      "item": [
+        {
+          "name": "Generate WhatsApp Share Data",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/orders/{{order_id}}/whatsapp",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "orders",
+                "{{order_id}}",
+                "whatsapp"
+              ]
+            },
+            "description": "Generate pre-filled message and direct wa.me link for manual WhatsApp communication with customer. Restricted to OWNER and ADMIN roles."
+          },
+          "response": [
+            {
+              "name": "Successful WhatsApp Share Data",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{auth_token}}",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base_url}}/orders/1/whatsapp",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "orders",
+                    "1",
+                    "whatsapp"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"success\": true,\n  \"message\": \"WhatsApp share data generated.\",\n  \"data\": {\n    \"phone\": \"6281234567890\",\n    \"message\": \"Halo Budi Santoso,\\n\\nPesanan Anda telah dicatat oleh Karya Jati Jepara.\\n\\nNomor Pesanan: ORD-202609-0001\\nProduk: Meja Makan Jati 6 Kursi\\n\\nPantau perkembangan pesanan:\\nhttp://localhost:5173/track/abcdef1234567890abcdef1234567890abcdef12\\n\\nTerima kasih.\",\n    \"url\": \"https://wa.me/6281234567890?text=Halo%20Budi%20Santoso%2C%0A%0APesanan%20Anda%20telah%20dicatat...\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.expect(jsonData.success).to.be.true;",
+                  "pm.expect(jsonData.data).to.have.property('phone');",
+                  "pm.expect(jsonData.data).to.have.property('message');",
+                  "pm.expect(jsonData.data).to.have.property('url');",
+                  "pm.expect(jsonData.data).to.not.have.property('public_token');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -715,5 +715,57 @@ Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
 }
 ```
 
+### WhatsApp Workflow (Phase 7)
+
+#### 1. Generate WhatsApp Share Data
+- **Method / Path:** `GET /api/v1/orders/{id}/whatsapp`
+- **Auth:** Bearer Token (Roles: `OWNER`, `ADMIN`)
+- **Otorisasi & Keamanan:**
+  - Hanya staf `OWNER` dan `ADMIN` yang diizinkan (staf `PRODUCTION` dan `QC` ditolak HTTP 403 Forbidden).
+  - Terisolasi per-workshop (akses ke order workshop lain menghasilkan HTTP 404 Not Found).
+  - Memerlukan nomor telepon pelanggan yang valid (format Indonesia dinormalisasi ke `628...`). Jika nomor telepon kosong atau tidak valid, mengembalikan HTTP 422 Unprocessable Entity.
+  - Pesanan dengan status `CANCELLED` tidak dapat dibagikan (mengembalikan HTTP 422 Unprocessable Entity).
+  - URL teks pesan di-encode menggunakan RFC 3986 (`rawurlencode`).
+  - Respons data JSON **tidak membocorkan** `public_token` sebagai field mandiri, tidak memuat ID internal, data finansial, atau data cacat QC.
+  - Menghasilkan pencatatan audit log `WHATSAPP_SHARE_GENERATED` dengan metadata minimal `{"order_id": <id>, "channel": "whatsapp"}`.
+- **Response 200 OK:**
+```json
+{
+  "success": true,
+  "message": "WhatsApp share data generated.",
+  "data": {
+    "phone": "6281234567890",
+    "message": "Halo Budi Santoso,\n\nPesanan Anda telah dicatat oleh Karya Jati Jepara.\n\nNomor Pesanan: ORD-202609-0001\nProduk: Meja Makan Jati 6 Kursi\n\nPantau perkembangan pesanan:\nhttp://localhost:5173/track/abcdef1234567890abcdef1234567890abcdef12\n\nTerima kasih.",
+    "url": "https://wa.me/6281234567890?text=Halo%20Budi%20Santoso%2C%0A%0APesanan%20Anda%20telah%20dicatat%20oleh%20Karya%20Jati%20Jepara.%0A%0ANomor%20Pesanan%3A%20ORD-202609-0001%0AProduk%3A%20Meja%20Makan%20Jati%206%20Kursi%0A%0APantau%20perkembangan%20pesanan%3A%0Ahttp%3A%2F%2Flocalhost%3A5173%2Ftrack%2Fabcdef1234567890abcdef1234567890abcdef12%0A%0ATerima%20kasih."
+  }
+}
+```
+- **Response 403 Forbidden (Peran Tidak Diizinkan):**
+```json
+{
+  "message": "This action is unauthorized."
+}
+```
+- **Response 404 Not Found (Pesanan Tidak Ditemukan / Lintas Tenant):**
+```json
+{
+  "success": false,
+  "message": "Order not found.",
+  "errors": {}
+}
+```
+- **Response 422 Unprocessable Entity (Nomor Tidak Valid / Pesanan Dibatalkan):**
+```json
+{
+  "message": "Nomor WhatsApp pelanggan tidak valid atau belum diisi.",
+  "errors": {
+    "phone": [
+      "Nomor WhatsApp pelanggan tidak valid atau belum diisi."
+    ]
+  }
+}
+```
+
 ### Dashboard (Planned)
 - `GET /api/v1/dashboard`
+

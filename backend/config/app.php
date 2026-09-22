@@ -17,6 +17,8 @@ return [
 
     'version' => env('APP_VERSION', '1.0.0'),
 
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:5173'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Environment

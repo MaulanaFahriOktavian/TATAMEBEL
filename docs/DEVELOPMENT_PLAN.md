@@ -99,7 +99,23 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 ---
 
 ### PHASE 7: WhatsApp Workflow
-- **Tujuan:** Integrasi pesan siap kirim (generated message) dengan link customer portal, tombol interaktif "Kirim WhatsApp", dan pencatatan activity log.
+- **Tujuan:** Menghubungkan pesanan TATAMEBEL dengan kanal WhatsApp secara sederhana dan aman tanpa WhatsApp Business API resmi. Menggunakan alur manual dispatch: `Order → generate message → generate wa.me URL → admin manually sends`.
+- **Deliverables:**
+  - Utilitas normalisasi nomor telepon Indonesia `WhatsAppNumberNormalizer` (`08...` / `+62...` / `62...` ke format `628...`). Validasi strict format ponsel tanpa mutasi agresif.
+  - Service terpisah `WhatsAppMessageService` untuk merakit pesan terstruktur, memetakan template berdasarkan `OrderStatus`, dan menyusun tautan `https://wa.me/{phone}?text={rawurlencode(message)}`.
+  - Pemetaan template cerdas:
+    - `ORDER_CREATED`: untuk status `DRAFT`, `QUOTATION`, `CONFIRMED`, `WAITING_DP`.
+    - `IN_PRODUCTION`: untuk status `READY_FOR_PRODUCTION`, `IN_PRODUCTION`.
+    - *Generic Progress Template*: untuk status `QC`, `PACKING`, `READY_TO_SHIP`, `SHIPPED` (mengabarkan progres tanpa klaim pesanan baru).
+    - `COMPLETED`: untuk status `COMPLETED`.
+    - `CANCELLED`: ditolak dengan validasi bisnis HTTP `422 Unprocessable Entity`.
+  - Endpoint terproteksi: `GET /api/v1/orders/{id}/whatsapp` dengan otorisasi `OrderPolicy::shareWhatsApp` (`OWNER` dan `ADMIN` diizinkan; `PRODUCTION` dan `QC` ditolak HTTP 403; cross-tenant HTTP 404).
+  - Keamanan data ketat: pesan dan respons JSON dilarang memuat catatan internal, detail cacat QC, ID internal, data finansial, atau `public_token` sebagai field JSON mandiri.
+  - Pencatatan log audit: aktivitas `WHATSAPP_SHARE_GENERATED` dicatat ke `activity_logs` dengan metadata minimal `{"order_id": <id>, "channel": "whatsapp"}` tanpa menyimpan isi pesan atau nomor telepon.
+  - Field `tracking_url` ditambahkan ke `OrderResource` authenticated admin.
+  - Komponen antarmuka `OrderWhatsAppActions` dan halaman admin `OrderDetailPage` pada rute `/orders/:id` dengan aksi "Bagikan via WhatsApp" (`window.open`) dan "Salin Link Tracking" (clipboard copy).
+  - Automated tests lulus 100% (7 unit test normalizer + 16 feature test WhatsApp share).
+- **Status:** Selesai dan terverifikasi.
 
 ---
 

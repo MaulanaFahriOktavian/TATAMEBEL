@@ -57,6 +57,7 @@ Route::middleware(['auth:sanctum', 'workshop.context'])->group(function () {
         Route::post('/', [OrderController::class, 'store'])->name('store');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus'])->name('change-status');
+        Route::get('/{id}/whatsapp', [OrderController::class, 'shareWhatsApp'])->name('whatsapp');
     });
 
     // Specifications (Phase 4)

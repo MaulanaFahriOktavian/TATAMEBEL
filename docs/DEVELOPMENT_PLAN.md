@@ -120,7 +120,19 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 ---
 
 ### PHASE 8: Testing, Hardening & Pilot Preparation
-- **Tujuan:** End-to-end integration testing, validasi keamanan (sanitization, rate limiting, token rotation), optimalisasi query index, audit kesesuaian sistem operasional mebel nyata, dan persiapan pilot workshop.
+- **Tujuan:** End-to-end integration testing, validasi keamanan (sanitization, rate limiting, physical storage segregation), audit integritas multi-tenant, dan verifikasi kesiapan pilot workshop.
+- **Deliverables:**
+  - Database regression: verifikasi `migrate:fresh`, `migrate:rollback`, foreign key integrity, dan unique constraints tanpa error.
+  - Auth & tenant isolation regression: uji coba lintas-tenant pada customer, order, spesifikasi, produksi, QC, dan media membuktikan isolasi data sempurna (HTTP 404 tanpa kebocoran data).
+  - Production & progress calculation regression: formula backend terverifikasi matematis (`completed / total * 100`) tanpa ketergantungan kalkulasi pada client frontend.
+  - Media physical security: berkas `INTERNAL` terbukti tersimpan fisik di disk private (`storage/app/private`) dan ditolak HTTP 403 saat diakses via URL publik tanpa signature.
+  - Quality Control gate: pemenuhan seluruh 5 syarat gerbang transisi pesanan ke `PACKING` (inspeksi lulus, checklist lengkap, nol defek aktif, tahapan QC produksi selesai).
+  - Customer progress portal: verifikasi proyeksi whitelist publik tanpa kebocoran public_token di response body, tanpa data finansial, dan tanpa catatan internal.
+  - WhatsApp manual dispatch: verifikasi normalisasi nomor telepon Indonesia, pembentukan URL wa.me ber-encoding RFC 3986, dan pencatatan audit log minimal.
+  - End-to-End Pilot Workflow Test: skenario uji komprehensif 22-langkah (`PilotOrderWorkflowTest`) mencakup seluruh alur dari autentikasi Owner hingga verifikasi portal publik dan pembersihan data.
+  - Full automated regression test suite: 166 test cases (1.184 assertions) lulus 100% tanpa kegagalan.
+  - Frontend code quality: oxlint linter 0 warning & 0 error, build produksi Vite sukses tanpa komplikasi.
+- **Status:** Selesai dan terverifikasi.
 
 ---
 

@@ -766,6 +766,157 @@ Lihat detail lengkap di [docs/CUSTOMER_ORDER.md](CUSTOMER_ORDER.md).
 }
 ```
 
+### Minimal Shipping Management (Phase 9)
+
+Endpoint untuk koordinasi pengiriman pesanan mebel berbasis tabel `shipping` existing (relasi one-to-one dengan `orders`). Mendukung pengiriman pihak ketiga (ekspedisi/cargo dengan nomor resi) maupun pengantaran mandiri workshop ("Armada Bengkel") tanpa nomor resi.
+
+#### 1. Get Shipping Detail
+- **URL:** `/api/v1/orders/{orderId}/shipping`
+- **Method:** `GET`
+- **Auth:** Sanctum Bearer Token (`OWNER`, `ADMIN`, `PRODUCTION`, `QC`)
+- **Headers:** `Accept: application/json`
+- **Response 200 OK (Data Tersedia):**
+```json
+{
+  "success": true,
+  "message": "Data pengiriman berhasil diambil.",
+  "data": {
+    "id": 1,
+    "order_id": 1,
+    "courier": "Armada Bengkel",
+    "tracking_number": null,
+    "shipping_address": "Jl. Melati Indah No. 5, Semarang",
+    "shipped_at": "2026-09-22T08:00:00Z",
+    "estimated_arrival": "2026-09-25",
+    "delivered_at": null,
+    "status": "SHIPPED",
+    "status_label": "Dalam Pengiriman",
+    "notes": "Pengiriman menggunakan armada pick-up workshop sendiri.",
+    "created_at": "2026-09-22T07:30:00Z",
+    "updated_at": "2026-09-22T08:00:00Z"
+  }
+}
+```
+- **Response 200 OK (Belum Dibuat):**
+```json
+{
+  "success": true,
+  "message": "Data pengiriman belum tersedia.",
+  "data": null
+}
+```
+- **Response 404 Not Found (Pesanan Tidak Ditemukan / Lintas Tenant):**
+```json
+{
+  "success": false,
+  "message": "Pesanan tidak ditemukan."
+}
+```
+
+#### 2. Create Shipping
+- **URL:** `/api/v1/orders/{orderId}/shipping`
+- **Method:** `POST`
+- **Auth:** Sanctum Bearer Token (`OWNER`, `ADMIN`)
+- **Headers:** `Accept: application/json`, `Content-Type: application/json`
+- **Request Body:**
+```json
+{
+  "courier": "Armada Bengkel",
+  "tracking_number": null,
+  "shipping_address": "Jl. Melati Indah No. 5, Semarang",
+  "estimated_arrival": "2026-09-25",
+  "notes": "Pengiriman mebel menggunakan armada pick-up workshop."
+}
+```
+- Catatan: `tracking_number` bernilai `nullable` untuk mengakomodasi armada bengkel sendiri tanpa nomor resi.
+- **Response 201 Created:**
+```json
+{
+  "success": true,
+  "message": "Data pengiriman berhasil dibuat.",
+  "data": {
+    "id": 1,
+    "order_id": 1,
+    "courier": "Armada Bengkel",
+    "tracking_number": null,
+    "shipping_address": "Jl. Melati Indah No. 5, Semarang",
+    "shipped_at": null,
+    "estimated_arrival": "2026-09-25",
+    "delivered_at": null,
+    "status": "PENDING",
+    "status_label": "Menunggu Pengiriman",
+    "notes": "Pengiriman mebel menggunakan armada pick-up workshop.",
+    "created_at": "2026-09-22T07:30:00Z",
+    "updated_at": "2026-09-22T07:30:00Z"
+  }
+}
+```
+- **Response 422 Unprocessable Entity (Validasi / Data Sudah Ada):**
+```json
+{
+  "success": false,
+  "message": "The given data was invalid.",
+  "errors": {
+    "courier": ["The courier field is required."],
+    "shipping_address": ["The shipping address field is required."]
+  }
+}
+```
+
+#### 3. Update Shipping
+- **URL:** `/api/v1/orders/{orderId}/shipping`
+- **Method:** `PATCH`
+- **Auth:** Sanctum Bearer Token (`OWNER`, `ADMIN`)
+- **Headers:** `Accept: application/json`, `Content-Type: application/json`
+- **Request Body:**
+```json
+{
+  "status": "READY",
+  "notes": "Barang sudah dikemas rapi dan siap diberangkatkan."
+}
+```
+- **Aturan Transisi Status Pengiriman:**
+  - `PENDING` &rarr; `READY`, `SHIPPED`
+  - `READY` &rarr; `SHIPPED`
+  - `SHIPPED` &rarr; `DELIVERED`
+  - `DELIVERED` bersifat terminal (tidak dapat mundur ke status sebelumnya).
+- **Response 200 OK:**
+```json
+{
+  "success": true,
+  "message": "Data pengiriman berhasil diperbarui.",
+  "data": {
+    "id": 1,
+    "order_id": 1,
+    "courier": "Armada Bengkel",
+    "tracking_number": null,
+    "shipping_address": "Jl. Melati Indah No. 5, Semarang",
+    "shipped_at": null,
+    "estimated_arrival": "2026-09-25",
+    "delivered_at": null,
+    "status": "READY",
+    "status_label": "Siap Dikirim",
+    "notes": "Barang sudah dikemas rapi dan siap diberangkatkan.",
+    "created_at": "2026-09-22T07:30:00Z",
+    "updated_at": "2026-09-22T07:45:00Z"
+  }
+}
+```
+
+#### 4. Gerbang Status Pesanan (`READY_TO_SHIP -> SHIPPED`)
+- Transisi pesanan ke status `SHIPPED` (`PATCH /api/v1/orders/{id}/status`) **wajib memiliki data pengiriman (`shipping`)** dengan alamat pengiriman (`shipping_address`) yang terisi.
+- Jika data pengiriman belum dibuat, backend menolak dengan HTTP 422:
+  ```json
+  {
+    "message": "Pesanan belum memiliki data pengiriman (shipping). Silakan buat data pengiriman terlebih dahulu sebelum mengubah status menjadi SHIPPED.",
+    "errors": {
+      "status": ["Pesanan belum memiliki data pengiriman (shipping). Silakan buat data pengiriman terlebih dahulu sebelum mengubah status menjadi SHIPPED."]
+    }
+  }
+  ```
+- Saat transisi ke `SHIPPED` berhasil, backend secara otomatis menyinkronkan status pengiriman menjadi `SHIPPED` dan mencatat `shipped_at = now()` (jika belum terisi).
+- Transisi `PACKING -> READY_TO_SHIP` tidak mewajibkan data shipping terlebih dahulu.
+- Transisi `SHIPPED -> COMPLETED` tidak mewajibkan status pengiriman `DELIVERED` menurut SDD, mengakomodasi konfirmasi serah terima langsung atau pickup pelanggan.
+
 ### Dashboard (Planned)
 - `GET /api/v1/dashboard`
-

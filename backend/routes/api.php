@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductionController;
 use App\Http\Controllers\Api\QcDefectController;
 use App\Http\Controllers\Api\QcInspectionController;
+use App\Http\Controllers\Api\ShippingController;
 use App\Http\Controllers\Api\SpecificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -58,6 +59,13 @@ Route::middleware(['auth:sanctum', 'workshop.context'])->group(function () {
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
         Route::patch('/{id}/status', [OrderController::class, 'changeStatus'])->name('change-status');
         Route::get('/{id}/whatsapp', [OrderController::class, 'shareWhatsApp'])->name('whatsapp');
+    });
+
+    // Minimal Shipping Management (Phase 9)
+    Route::prefix('orders/{orderId}/shipping')->name('api.v1.shipping.')->group(function () {
+        Route::get('/', [ShippingController::class, 'show'])->name('show');
+        Route::post('/', [ShippingController::class, 'store'])->name('store');
+        Route::patch('/', [ShippingController::class, 'update'])->name('update');
     });
 
     // Specifications (Phase 4)

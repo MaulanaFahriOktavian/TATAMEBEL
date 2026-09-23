@@ -136,6 +136,30 @@ Pengembangan TATAMEBEL dibagi ke dalam 9 fase berurutan (Phase 0 hingga Phase 8)
 
 ---
 
+### PHASE 9: Pilot Hardening *(VERIFIED)*
+- **Tujuan:** Menutup temuan operasional dari Pilot Simulation Audit pada dua area kunci: Frontend Authentication UI & Reactive Session, serta Minimal Shipping Management & Order SHIPPED Gate.
+- **Deliverables:**
+  - **Frontend Authentication UI & Session:**
+    - Service autentikasi `authService.js` (`login`, `logout`, `getMe`) berbasis Axios instance existing.
+    - Session management reaktif global via `AuthContext.jsx` dan hook `useAuth.js` (`user`, `role`, `loading`, `isAuthenticated`, `canShareWhatsApp`).
+    - Halaman login profesional bertema workshop mebel `LoginPage.jsx` pada rute publik `/login` dengan validasi aman tanpa kebocoran stack trace.
+    - Mekanisme proteksi rute `ProtectedRoute.jsx` yang membatasi akses `/` dan `/orders/:id` untuk staf terautentikasi dan mengarahkan pengguna belum login ke `/login`.
+    - Portal pelacakan pelanggan `/track/:publicToken` tetap strictly public tanpa intervensi autentikasi.
+    - Penanganan HTTP 401 terpusat di `api.js` yang membersihkan sesi lokal dan mengarahkan ke `/login` tanpa loop redirect.
+  - **Minimal Shipping Management:**
+    - Service layer `ShippingService.php` berbasis tabel `shipping` existing (tanpa migrasi baru).
+    - Status transitions terverifikasi: `PENDING -> READY/SHIPPED`, `READY -> SHIPPED`, `SHIPPED -> DELIVERED` (terminal).
+    - Form Requests `StoreShippingRequest` dan `UpdateShippingRequest` dengan dukungan armada bengkel sendiri (`tracking_number` nullable).
+    - Policy `ShippingPolicy` dengan isolasi multi-tenant (`belongsToSameWorkshop`) dan otorisasi peran (OWNER/ADMIN kelola, PRODUCTION/QC lihat).
+    - RESTful Controller `ShippingController` (`GET`, `POST`, `PATCH /api/v1/orders/{orderId}/shipping`) dan `ShippingResource`.
+    - Gerbang otoritatif `OrderService::changeStatus`: transisi `READY_TO_SHIP -> SHIPPED` mewajibkan rekaman shipping dengan `shipping_address` valid, serta otomatis menyinkronkan status pengiriman ke `SHIPPED` dan mencatat `shipped_at = now()`.
+    - Integritas Customer Portal: proyeksi publik menampilkan kurir dan status pengiriman tanpa kebocoran ID internal atau catatan bengkel.
+    - Automated tests: 13 feature test baru pada `ShippingManagementTest` (total suite: 179 passed, 1.263 assertions).
+    - Postman collection diperbarui dengan folder `Shipping` (GET, POST, PATCH).
+- **Status:** Selesai dan terverifikasi.
+
+---
+
 ## Anti-Slop & Quality Principles
 1. **No Fake Functionality:** Dilarang membuat dummy API atau frontend mock yang seolah-olah berfungsi namun tidak didukung backend riil.
 2. **Backend as Source of Truth:** Seluruh aturan bisnis, kalkulasi persen progres, dan transisi status wajib ditegakkan di backend Laravel.

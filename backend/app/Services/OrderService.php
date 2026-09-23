@@ -244,6 +244,36 @@ class OrderService
             }
         }
 
+        // Phase 9 Gate: READY_TO_SHIP -> SHIPPED requires existing shipping record with valid shipping address
+        if ($newStatus === OrderStatus::SHIPPED) {
+            $shipping = $order->shipping()->first();
+
+            if (! $shipping) {
+                throw ValidationException::withMessages([
+                    'status' => ['Pesanan belum memiliki data pengiriman (shipping). Silakan buat data pengiriman terlebih dahulu sebelum mengubah status menjadi SHIPPED.'],
+                ]);
+            }
+
+            if (empty(trim($shipping->shipping_address ?? ''))) {
+                throw ValidationException::withMessages([
+                    'status' => ['Alamat pengiriman pada data shipping belum terisi. Lengkapi alamat pengiriman terlebih dahulu sebelum mengubah status menjadi SHIPPED.'],
+                ]);
+            }
+
+            // Automatically synchronize shipping status to SHIPPED and record shipped_at
+            $shippingUpdates = [];
+            if ($shipping->status !== \App\Enums\ShippingStatus::SHIPPED && $shipping->status !== \App\Enums\ShippingStatus::DELIVERED) {
+                $shippingUpdates['status'] = \App\Enums\ShippingStatus::SHIPPED;
+            }
+            if (is_null($shipping->shipped_at)) {
+                $shippingUpdates['shipped_at'] = now();
+            }
+
+            if (! empty($shippingUpdates)) {
+                $shipping->update($shippingUpdates);
+            }
+        }
+
         // Apply timestamp rules based on state
         $updates = ['status' => $newStatus];
 

@@ -1,73 +1,16 @@
-import { useState, useEffect } from 'react';
-import api from '../services/api';
+import { useContext } from 'react';
+import { AuthContext } from '../context/auth-context';
 
 /**
- * Custom hook to interact with the backend authentication session.
- * Connects directly with /auth/me and Sanctum bearer token.
+ * Custom hook to interact with the global reactive authentication session.
+ * Exposes: user, role, loading, error, isAuthenticated, canShareWhatsApp, login, logout, refreshUser.
  */
 export function useAuth() {
-  const [user, setUser] = useState(() => {
-    try {
-      const cached = localStorage.getItem('user');
-      return cached ? JSON.parse(cached) : null;
-    } catch {
-      return null;
-    }
-  });
-  const [loading, setLoading] = useState(() => {
-    return Boolean(localStorage.getItem('token'));
-  });
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      return;
-    }
-
-    let isMounted = true;
-
-    api.get('/auth/me')
-      .then((res) => {
-        if (isMounted && res.data?.success) {
-          const userData = res.data.data;
-          setUser(userData);
-          localStorage.setItem('user', JSON.stringify(userData));
-        }
-      })
-      .catch((err) => {
-        if (!isMounted) return;
-        setError(err.response?.data?.message || 'Sesi telah kedaluwarsa.');
-        // If 401 unauthenticated, clear local session
-        if (err.response?.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const canShareWhatsApp = Boolean(
-    user && (user.role === 'OWNER' || user.role === 'ADMIN')
-  );
-
-  return {
-    user,
-    role: user?.role || null,
-    loading,
-    error,
-    isAuthenticated: Boolean(user),
-    canShareWhatsApp,
-  };
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
 
 export default useAuth;

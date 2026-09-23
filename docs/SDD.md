@@ -70,6 +70,7 @@ DRAFT -> QUOTATION -> CONFIRMED -> WAITING_DP -> READY_FOR_PRODUCTION
 - **Transisi Ilegal:** Ditolak dengan HTTP 422 Unprocessable Entity.
 - **Penomoran Pesanan:** `ORD-YYYYMM-XXXX` berurutan per workshop per bulan dengan penguncian eksklusif baris workshop (`lockForUpdate`).
 - **Kalkulasi Nilai:** `subtotal = qty * unit_price`, `total_amount = sum(subtotals)`. Dihitung otoritatif oleh backend secara atomik dalam database transaction.
+- **Gerbang Pengiriman (`READY_TO_SHIP -> SHIPPED`):** Transisi pesanan ke status `SHIPPED` mewajibkan ketersediaan data pengiriman (`shipping`) dengan alamat pengiriman (`shipping_address`) yang terisi. Saat transisi berhasil, backend secara otomatis menyinkronkan status pengiriman ke `SHIPPED` dan mencatat waktu `shipped_at = now()` jika belum terisi. Transisi `PACKING -> READY_TO_SHIP` tidak mewajibkan data pengiriman terlebih dahulu. Transisi `SHIPPED -> COMPLETED` tidak mewajibkan status pengiriman `DELIVERED`, mengakomodasi serah terima langsung atau pengambilan mandiri pelanggan tanpa ketergantungan konfirmasi kurir pihak ketiga.
 
 ## 6. Specification Versioning & Change Requests
 - Spesifikasi mebel diawali dengan status `DRAFT` (versi 1).

@@ -292,6 +292,16 @@ class OrderManagementTest extends TestCase
                 ]);
             }
 
+            if ($targetStatus === 'SHIPPED') {
+                \App\Models\Shipping::factory()->create([
+                    'workshop_id' => $this->workshopA->id,
+                    'order_id' => $order->id,
+                    'courier' => 'Armada Bengkel',
+                    'shipping_address' => 'Jl. Pengrajin Mebel No. 1, Jepara',
+                    'status' => \App\Enums\ShippingStatus::READY,
+                ]);
+            }
+
             $response = $this->withHeader('Authorization', 'Bearer '.$token)
                 ->patchJson('/api/v1/orders/'.$order->id.'/status', ['status' => $targetStatus]);
 

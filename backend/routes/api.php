@@ -26,10 +26,32 @@ use Illuminate\Support\Facades\Route;
 // Health Check (Public)
 Route::get('/health', HealthController::class)->name('api.v1.health');
 
-// Customer Progress Portal (Public Tracking - Phase 6)
+// Public E-Commerce & Workshop Showcase Routes
+Route::prefix('products')->name('api.v1.products.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\ProductController::class, 'index'])->name('index');
+    Route::get('/{idOrSlug}', [\App\Http\Controllers\Api\ProductController::class, 'show'])->name('show');
+});
+
+Route::prefix('categories')->name('api.v1.categories.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\CategoryController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\Api\CategoryController::class, 'show'])->name('show');
+});
+
+Route::prefix('cart')->name('api.v1.cart.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Api\CartController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Api\CartController::class, 'store'])->name('store');
+    Route::put('/{id}', [\App\Http\Controllers\Api\CartController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Api\CartController::class, 'destroy'])->name('destroy');
+    Route::delete('/', [\App\Http\Controllers\Api\CartController::class, 'clear'])->name('clear');
+});
+
+Route::post('/inquiries', [\App\Http\Controllers\Api\InquiryController::class, 'store'])->name('api.v1.inquiries.store');
+
+// Customer Progress Portal (Public Tracking)
 Route::prefix('public')->name('api.v1.public.')->middleware(['throttle:60,1'])->group(function () {
     Route::get('/orders/{public_token}', [CustomerPortalController::class, 'show'])->name('orders.show');
 });
+Route::get('/tracking/{token}', [CustomerPortalController::class, 'show'])->name('api.v1.tracking.show');
 
 // Authentication Routes
 Route::prefix('auth')->name('api.v1.auth.')->group(function () {

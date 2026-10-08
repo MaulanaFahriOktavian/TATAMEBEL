@@ -19,7 +19,10 @@ class CustomerPortalController extends Controller
      */
     public function show(string $publicToken): JsonResponse
     {
-        $order = Order::where('public_token', $publicToken)
+        $order = Order::where(function ($q) use ($publicToken) {
+            $q->where('public_token', $publicToken)
+              ->orWhere('order_number', $publicToken);
+        })
             ->with([
                 'workshop:id,name,phone,address',
                 'customer:id,name',

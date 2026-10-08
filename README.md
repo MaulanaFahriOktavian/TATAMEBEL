@@ -1,223 +1,114 @@
-# TATAMEBEL — Sistem Manajemen Pesanan & Produksi Mebel
+# TATAMEBEL — Furnitur Modern & Arsitektural Kustom
 
-> *"Tetap jualan lewat WhatsApp. Kelola pesanan dan produksinya lewat TATAMEBEL."*
-
-TATAMEBEL adalah sistem manajemen operasional untuk pengrajin dan workshop mebel yang merapikan proses pesanan berbasis WhatsApp menjadi alur produksi yang terstruktur, terpantau, dan dapat dibagikan progresnya kepada pelanggan melalui satu tautan publik.
+Sistem etalase furnitur modern & workshop kustom TATAMEBEL dengan backend Laravel REST API dan frontend modern Single Page Application (React + Vite + Tailwind CSS).
 
 ---
 
 ## 1. Arsitektur Proyek
 
 ```
-tatamebel/
-├── backend/                  # REST API Laravel 13.x
+TATAMEBEL/
+├── backend/                       # REST API (Laravel 12/13)
 │   ├── app/
-│   │   ├── Enums/
-│   │   ├── Http/
-│   │   │   ├── Controllers/Api/
-│   │   │   ├── Requests/
-│   │   │   ├── Resources/
-│   │   │   └── Middleware/
-│   │   ├── Models/
-│   │   ├── Policies/
-│   │   ├── Services/
-│   │   └── Support/
-│   ├── config/
+│   │   ├── Http/Controllers/Api/  # Product, Category, Cart, Inquiry Controllers
+│   │   └── Models/                # Product, Category, CartItem, CustomInquiry
 │   ├── database/
-│   │   ├── migrations/
-│   │   └── seeders/
-│   ├── postman/              # Postman Collections & Environments
-│   │   ├── Tatamebel.postman_collection.json
-│   │   └── Tatamebel.postman_environment.json
+│   │   ├── migrations/            # E-commerce & Workshop schema migrations
+│   │   └── seeders/               # EcommerceSeeder & Workshop seeders
 │   ├── routes/
+│   │   └── api.php                # API v1 routes
 │   └── tests/
+│       └── Feature/Ecommerce/     # PHPUnit Automated API Tests
 │
-├── frontend/                 # Single Page Application (React + Vite)
+├── frontend/                      # React SPA (Vite + Tailwind CSS v3)
 │   ├── src/
-│   │   ├── components/
-│   │   ├── features/
-│   │   ├── hooks/
-│   │   ├── pages/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   └── utils/
+│   │   ├── components/ecommerce/  # CartDrawer, ProductDetailModal, SearchModal, OrderTrackingModal
+│   │   ├── pages/landing/         # Modern Atelier & Architectural Landing Page
+│   │   ├── services/              # Axios & Fetch API clients
+│   │   └── index.css              # Custom design tokens, charcoal pattern & scrollbars
+│   ├── tailwind.config.js         # Curated architectural palette & font typography
 │   └── package.json
-│
-├── docs/                     # Spesifikasi & Dokumentasi Arsitektur
-│   ├── SDD.md
-│   ├── DEVELOPMENT_PLAN.md
-│   ├── DATABASE_SCHEMA.md
-│   ├── API_CONTRACT.md
-│   └── QUALITY_CONTROL.md
 │
 └── README.md
 ```
 
 ---
 
-## 2. Prasyarat Sistem
+## 2. Fitur Utama
 
-- **PHP:** >= 8.3 (Direkomendasikan PHP 8.4)
-- **Composer:** >= 2.2
-- **Node.js:** >= 20.x
-- **MySQL:** >= 8.0
-- **Ekstensi PHP:** `pdo_mysql`, `mbstring`, `openssl`, `fileinfo`, `gd` / `imagick`
+1. **Etalase Furnitur Modern & Portofolio Arsitektural:**
+   - Katalog produk dinamis berbasis database (Kayu Jati Grade A, Ash Solid, Boucle, Cane Rotan).
+   - Filter tab kategori instan (*Semua, Kursi, Meja, Penyimpanan, Sofa Santai*).
+   - Modal detail produk interaktif dengan opsi finishing dan spesifikasi teknis.
+   - Pencarian instan furnitur berdasarkan nama, jenis kayu, dan deskripsi.
 
----
+2. **Keranjang Belanja (Cart) & Konsultasi WhatsApp:**
+   - Keranjang belanja real-time berbasis sesi (`X-Cart-Session`).
+   - Penambahan produk langsung ke keranjang dengan badge dinamis pada header.
+   - Drawer keranjang interaktif dengan kalkulasi total otomatis.
+   - Tombol checkout otomatis yang menyusun format pesan konsultasi pesanan ke WhatsApp.
 
-## 3. Instalasi & Pengaturan Lingkungan
+3. **Formulir Pengajuan Proyek Kustom & Arsitektur:**
+   - Konsultasi proyek untuk hunian residensial, hospitality, kantor arsitektur, atau furnitur kustom satuan.
+   - Validasi data otomatis dan penyimpanan ke database `custom_inquiries`.
+   - Notifikasi dan feedback langsung di antarmuka.
 
-### A. Backend Setup (Laravel REST API)
+4. **Lacak Pesanan (Order Tracking):**
+   - Modal pelacakan publik menggunakan nomor pesanan atau token publik untuk memantau status produksi secara langsung.
 
-1. Masuk ke direktori backend:
-   ```bash
-   cd backend
-   ```
-
-2. Pasang dependensi PHP:
-   ```bash
-   composer install
-   ```
-
-3. Konfigurasi file environment:
-   ```bash
-   cp .env.example .env
-   php artisan key:generate
-   ```
-   Pastikan pengaturan database pada `.env` telah sesuai:
-   ```env
-   DB_CONNECTION=mysql
-   DB_HOST=127.0.0.1
-   DB_PORT=3306
-   DB_DATABASE=tatamebel
-   DB_USERNAME=root
-   DB_PASSWORD=
-   
-   FRONTEND_URL=http://localhost:5173
-   SANCTUM_STATEFUL_DOMAINS=localhost,localhost:5173,127.0.0.1,127.0.0.1:8000,::1
-   ```
-
-4. Jalankan migrasi dan seeder awal:
-   ```bash
-   php artisan migrate:fresh --seed
-   ```
-
-5. Hubungkan storage publik untuk media bukti yang dapat dilihat pelanggan:
-   ```bash
-   php artisan storage:link
-   ```
-
-6. Jalankan backend development server:
-   ```bash
-   php artisan serve
-   ```
-   Backend aktif pada: `http://127.0.0.1:8000` (API Base: `http://127.0.0.1:8000/api/v1`)
+5. **Akses Internal Staf & Workshop:**
+   - Rute staf `/login` dan manajemen pesanan internal tetap tersedia untuk operasional workshop.
 
 ---
 
-### B. Frontend Setup (React + Vite)
+## 3. Endpoints REST API (Laravel)
 
-1. Masuk ke direktori frontend:
-   ```bash
-   cd frontend
-   ```
+Semua endpoint publik tersedia di bawah prefix `/api/v1/`:
 
-2. Pasang dependensi Node.js:
-   ```bash
-   npm install
-   ```
-
-3. Konfigurasi file environment (opsional jika menggunakan default):
-   ```bash
-   cp .env.example .env
-   ```
-   Konfigurasi default mengarah ke:
-   ```env
-   VITE_API_BASE_URL=http://127.0.0.1:8000/api/v1
-   ```
-
-4. Jalankan development server:
-   ```bash
-   npm run dev
-   ```
-   Frontend aktif pada: `http://localhost:5173`
+| Method | Endpoint | Deskripsi |
+|---|---|---|
+| `GET` | `/api/v1/products` | Mendapatkan daftar produk aktif (filter kategori & pencarian) |
+| `GET` | `/api/v1/products/{idOrSlug}` | Mendapatkan detail produk beserta varian dan gambar |
+| `GET` | `/api/v1/categories` | Mendapatkan daftar kategori furnitur |
+| `GET` | `/api/v1/categories/{slug}` | Mendapatkan detail kategori beserta produk di dalamnya |
+| `GET` | `/api/v1/cart` | Mengambil data item keranjang untuk sesi aktif |
+| `POST` | `/api/v1/cart` | Menambahkan produk ke keranjang belanja |
+| `PATCH` | `/api/v1/cart/{itemId}` | Mengubah kuantitas item keranjang |
+| `DELETE` | `/api/v1/cart/{itemId}` | Menghapus item dari keranjang |
+| `DELETE` | `/api/v1/cart` | Mengosongkan seluruh keranjang belanja |
+| `POST` | `/api/v1/inquiries` | Mengirim pengajuan konsultasi proyek mebel kustom |
+| `GET` | `/api/v1/tracking/{token}` | Memeriksa status pesanan secara publik |
 
 ---
 
-## 4. Akun Pengembang Lokal (Local Seeded Accounts)
+## 4. Cara Menjalankan
 
-Setelah menjalankan `php artisan db:seed` (atau `migrate:fresh --seed`), akun-akun pondasi workshop berikut tersedia untuk pengujian lokal:
+### Backend (Laravel)
+```bash
+cd backend
+composer install
+php artisan migrate
+php artisan db:seed --class=EcommerceSeeder
+php artisan serve
+```
+Backend berjalan pada: `http://127.0.0.1:8000`
 
-- **Workshop:** `Workshop Kayu Lestari` (Slug: `workshop-kayu-lestari`)
-- **Password default seluruh akun:** `password`
+### Frontend (React + Vite)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Frontend berjalan pada: `http://localhost:5173`
 
-| Role | Nama Pengguna | Email | Hak Akses Utama |
-| :--- | :--- | :--- | :--- |
-| **OWNER** | Pak Bambang (Owner) | `owner@kayulestari.com` | Akses penuh, manajemen keuangan, WhatsApp share, kontrol produksi |
-| **ADMIN** | Siti Aminah (Admin) | `admin@kayulestari.com` | Input pesanan, pelanggan, WhatsApp share, koordinasi jadwal |
-| **PRODUCTION** | Joko Santoso (Kepala Produksi) | `produksi@kayulestari.com` | Update tahapan produksi, upload bukti pengerjaan teknis |
-| **QC** | Budi Setiawan (Inspektur QC) | `qc@kayulestari.com` | Inspeksi QC, evaluasi checklist, catat defect & verifikasi rework |
+### Menjalankan Pengujian Otomatis
+```bash
+# Pengujian Backend (PHPUnit)
+cd backend
+php vendor/phpunit/phpunit/phpunit tests/Feature/Ecommerce/EcommerceApiTest.php
 
----
-
-## 5. Pengujian & Kualitas Kode
-
-- **Backend Test Suite (PHPUnit):**
-  ```bash
-  cd backend
-  php artisan test
-  ```
-- **Frontend Code Linter:**
-  ```bash
-  cd frontend
-  npm run lint
-  ```
-- **Frontend Production Build:**
-  ```bash
-  cd frontend
-  npm run build
-  ```
-- **API Health Check:**
-  ```bash
-  curl http://127.0.0.1:8000/api/v1/health
-  ```
-
----
-
-## 6. Integrasi API & Pengujian Postman
-
-Koleksi dan environment Postman telah disediakan di folder `backend/postman/`:
-
-- **Koleksi:** `backend/postman/Tatamebel.postman_collection.json`
-- **Environment:** `backend/postman/Tatamebel.postman_environment.json`
-
-### Variabel Environment Postman:
-- `base_url`: `http://127.0.0.1:8000/api/v1`
-- `token`: Bearer token (terisi otomatis saat request *Login* berhasil dieksekusi)
-- `order_id`: Terisi otomatis saat request *Create Order* berhasil dieksekusi
-- `public_token`: Terisi otomatis saat request *Create Order* berhasil dieksekusi
-- `qc_inspection_id`: Terisi otomatis saat request *Create QC Inspection* berhasil dieksekusi
-- `defect_id`: Terisi otomatis saat request *Log QC Defect* berhasil dieksekusi
-
----
-
-## 7. Batasan Fungsional & Status Pilot (Pilot Preparation Boundaries)
-
-Sistem saat ini berada pada tahap **Pilot Preparation (Fase 8 Selesai)**. Fitur dan batasan operasional yang berlaku adalah sebagai berikut:
-
-1. **WhatsApp Workflow (Manual Share):**
-   - TATAMEBEL menyediakan generator pesan terformat beserta tautan `https://wa.me/...`.
-   - Admin/Owner membuka tautan dan mengirimkan pesan secara manual melalui aplikasi WhatsApp web/desktop.
-   - **Belum menggunakan WhatsApp Business Cloud API otomatis.**
-
-2. **Akses Pelanggan (Customer Portal):**
-   - Pelanggan **tidak memiliki akun pengguna** dan tidak login via Sanctum.
-   - Pelanggan memantau pesanan melalui URL publik berbasis token unik: `/track/{public_token}`.
-   - Portal publik hanya menampilkan nama pelanggan, spesifikasi akhir yang disetujui (LOCKED), tahapan produksi aktif, foto bertanda CUSTOMER, status QC publik, dan status ekspedisi. Informasi finansial dan catatan internal disembunyikan secara ketat.
-
-3. **Keuangan & Pembayaran:**
-   - Pencatatan pembayaran bersifat administratif/manual di workshop.
-   - **Belum terintegrasi dengan Payment Gateway otomatis.**
-
-4. **Persediaan & Rantai Pasok:**
-   - Modul *Inventory / Stok Bahan Baku*, *Supplier*, dan *Bill of Materials (BOM)* **belum termasuk** dalam cakupan pilot saat ini.
+# Pengujian Frontend Lint & Build
+cd frontend
+npm run lint
+npm run build
+```

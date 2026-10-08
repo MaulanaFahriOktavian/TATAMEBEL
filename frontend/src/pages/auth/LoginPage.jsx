@@ -32,7 +32,7 @@ export default function LoginPage() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/orders" replace />;
   }
 
   const handleSubmit = async (e) => {
